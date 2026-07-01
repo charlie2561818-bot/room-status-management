@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>茶雲居房務即時管理系統 v26.9 (Stable)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        /* --- 茶雲居 咖啡色系 --- */
+        :root {
+            --theme-color: #4E342E; --theme-light: #8D6E63;
+            --bg-cream: #FFF8E1; --text-main: #3E2723;
+            /* 狀態色 */
+            --st-blue-bg: #E3F2FD; --st-blue-tx: #0D47A1; --st-blue-bd: #2196F3;
+            --st-green-bg: #E8F5E9; --st-green-tx: #1B5E20; --st-green-bd: #4CAF50;
+            --st-red-bg: #FFEBEE; --st-red-tx: #B71C1C; --st-red-bd: #D32F2F;
+            --st-pp-bg: #F3E5F5; --st-pp-tx: #4A148C; --st-pp-bd: #9C27B0;
+            --st-yl-bg: #FFFDE7; --st-yl-tx: #F57F17; --st-yl-bd: #FBC02D;
+        }
+        body.training-mode { --theme-color: #E65100; --theme-light: #FF9800; --bg-cream: #FFF3E0; }
+        
+        body { 
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-cream); 
+            color: var(--text-main); 
+            margin: 0; padding-bottom: 80px; 
+            user-select: none; -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation; 
+        }
+        
+        button { cursor: pointer; border: none; outline: none; font-family: inherit; }
+        .icon { font-family: 'Material Icons'; vertical-align: middle; }
+        .hidden { display: none !important; }
+
+        /* Login */
+        #login-layer { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(135deg, #FFF8E1 0%, #D7CCC8 100%); 
+            z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            padding: 20px; text-align: center; 
+        }
+        .logo-box { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 30px; }
+        .brand-logo-container {
+            width: 120px; height: 120px; background: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom: 20px;
+            overflow: hidden; border: 4px solid var(--theme-color);
+        }
+        .brand-img { width: 100%; height: 100%; object-fit: cover; } 
+        .app-title { font-size: 28px; font-weight: 900; color: var(--theme-color); margin-bottom: 5px; text-align: center; }
+        .app-subtitle { font-family: 'Roboto', sans-serif; font-size: 12px; color: var(--theme-light); font-weight: 500; text-transform: uppercase; margin-bottom: 40px; text-align: center; }
+        
+        .role-btn { background: white; width: 280px; padding: 16px; margin: 8px 0; border-radius: 12px; border: 2px solid var(--theme-color); font-size: 18px; font-weight: bold; color: var(--text-main); box-shadow: 0 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px; justify-content: center; }
+        .role-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .aya-login-box { display: none; flex-direction: column; align-items: center; width: 100%; }
+        .pin-input { width: 200px; padding: 15px; font-size: 24px; text-align: center; border: 2px solid var(--theme-light); border-radius: 12px; margin-bottom: 15px; background: rgba(255,255,255,0.9); }
+        .pin-submit { background: var(--st-green-bd); color: white; width: 200px; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: bold; }
+        .training-link { margin-top: 50px; color: #E65100; font-weight: bold; font-size: 14px; padding: 10px 20px; border: 2px dashed #E65100; border-radius: 20px; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.5); }
+
+        /* App */
+        #app-layer { display: none; }
+        .header { background: var(--theme-color); color: white; padding: 12px 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .brand { font-size: 20px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+        .user-tag { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold;}
+        
+        .date-bar { background: rgba(0,0,0,0.2); margin: -12px -15px 8px -15px; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .date-display { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 5px; color: #fff; }
+        .date-nav-btn { background: none; color: white; font-size: 24px; padding: 0 10px; }
+        .today-badge { background: var(--st-yl-bd); color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 900; cursor: pointer;}
+        
+        .floor-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; }
+        .tab { background: rgba(255,255,255,0.15); color: #ddd; border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; font-weight: bold; }
+        .tab.active { background: white; color: var(--theme-color); font-weight: bold; border-color: white; }
+        
+        .day-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: rgba(0,0,0,0.05); margin: 5px -15px 0 -15px; border-top: 1px solid rgba(0,0,0,0.1); }
+        .day-sync-btn { background: #ccc; color: #333; border: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 5px; }
+        .day-sync-btn.active { background: #FFC107; color: #3E2723; border: 2px solid #FFA000; }
+
+        .room-grid { padding: 15px; display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+        .aya-mode .room-grid { grid-template-columns: 1fr; }
+        
+        .card { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; border-left: 6px solid #ccc; transition: transform 0.1s; user-select: none; cursor: pointer; box-sizing: border-box;}
+        .card:active { transform: scale(0.98); }
+        
+        .st-blue { border-left-color: var(--st-blue-bd); background: var(--st-blue-bg); }
+        .st-green { border-left-color: var(--st-green-bd); background: var(--st-green-bg); }
+        .st-red { border-left-color: var(--st-red-bd); background: var(--st-red-bg); }
+        .st-purple { border-left-color: var(--st-pp-bd); background: var(--st-pp-bg); }
+        .st-yellow { border-left-color: var(--st-yl-bd); background: var(--st-yl-bg); }
+        
+        .r-head { display: flex; justify-content: space-between; }
+        .r-no { font-size: 22px; font-weight: 900; }
+        .r-type { font-size: 12px; opacity: 0.7; }
+        .st-txt { font-size: 13px; font-weight: bold; text-align: right; }
+        .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .tag { font-size: 12px; background: rgba(255,255,255,0.6); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); font-weight: bold; display: flex; align-items: center; gap: 3px;}
+        .tag-high { background: #FFCC80; color: #E65100; border: 1px solid #E65100; }
+        .tag-flash { background: #FF5722; color: white; border: 1px solid #E64A19; animation: flash 2s infinite; }
+        .tag-dirty { background: #D32F2F; color: white; border: 1px solid #B71C1C; }
+        
+        .moon-icon { position: absolute; top: 8px; right: 8px; font-size: 18px; background: rgba(255,255,255,0.9); border-radius: 50%; padding: 2px; }
+
+        /* Matrix - Fixed Sticky */
+        #week-view-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 500; display: none; flex-direction: column; }
+        .wv-header { padding: 12px; background: var(--theme-color); color: white; display: flex; justify-content: space-between; align-items: center; }
+        .wv-aya-alert { text-align: center; background: #FFF3E0; color: #E65100; font-weight: bold; font-size: 12px; padding: 8px; border-bottom: 1px solid #FFCC80; }
+        .wv-legend { background: #424242; color: white; padding: 8px; font-size: 11px; display: flex; justify-content: space-around; flex-wrap: wrap; }
+        .leg-item { display: flex; align-items: center; gap: 4px; }
+        .leg-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+        .wv-nav-btn { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .wv-today-btn { background: #FFC107; color: #3E2723; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 900; border: none; cursor: pointer;}
+        
+        .wv-toolbar { padding: 8px; background: #eee; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .wv-sync-btn { background: #ccc; padding: 5px 10px; border-radius: 4px; font-weight: bold; }
+        .wv-sync-btn.active { background: var(--st-yl-bd); color: black; border: 2px solid #F57F17; }
+        
+        .wv-grid-container { flex: 1; overflow: auto; padding-bottom: 20px; max-width: 100vw; position: relative; -webkit-overflow-scrolling: touch; }
+        
+        /* Sticky Table */
+        .wv-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+        .wv-table th, .wv-table td { border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; background: white; box-sizing: border-box; }
+
+        /* Sticky Header Rows */
+        .wv-table thead tr:first-child th { position: sticky; top: 0; z-index: 30; background: #e0e0e0; color: #333; font-size: 11px; padding: 5px; text-transform: uppercase; font-weight: 900; }
+        .wv-table thead tr:last-child th { position: sticky; top: 28px; z-index: 30; background: #f0f0f0; padding: 8px 2px; font-size: 10px; min-width: 45px; }
+        
+        /* Sticky Room Column */
+        .wv-table td:first-child, .wv-table th:first-child { position: sticky; left: 0; z-index: 20; background: white; font-weight: bold; border-right: 2px solid #999 !important; }
+        .wv-table td:first-child { font-size: 14px; padding: 4px; }
+
+        /* Intersection */
+        .wv-table thead tr:first-child th:first-child { z-index: 50; background: #e0e0e0; font-size: 14px; color:#3E2723; }
+        .wv-table thead tr:last-child th:first-child { z-index: 50; background: #f0f0f0; top: 28px; }
+        
+        .wv-table td { text-align: center; padding: 0; height: 60px; vertical-align: middle; position: relative; min-width: 45px; }
+        .th-weekend { background-color: #FFEBEE !important; color: #D32F2F; }
+        
+        .cell-content { width: 100%; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: #333; transition: background 0.1s; cursor: pointer; user-select: none; }
+        .c-blue { background: var(--st-blue-bg); color: var(--st-blue-bd); }
+        .c-yellow { background: var(--st-yl-bg); color: #F57F17; border: 1px solid #FBC02D; }
+        .c-green { background: var(--st-green-bg); color: var(--st-green-tx); }
+        .c-red { background: var(--st-red-bg); color: var(--st-red-tx); }
+        .c-purple { background: var(--st-pp-bg); color: var(--st-pp-tx); }
+        .cell-tag { background: white; padding: 0 2px; border-radius: 2px; margin-top: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); font-size: 9px; line-height: 10px; white-space: nowrap; font-weight: bold; pointer-events: none; color: #E65100;}
+        .cell-moon { position: absolute; top: 1px; right: 1px; font-size: 10px; pointer-events: none; }
+        .cell-flash { position: absolute; bottom: 1px; right: 1px; font-size: 10px; color: #FF5722; font-weight: bold; pointer-events: none; }
+        .cell-status { font-size: 10px; line-height: 12px; margin-top: 2px; }
+        .cell-icons { display: flex; gap: 2px; justify-content: center; align-items: center; background: rgba(255,255,255,0.6); border-radius: 4px; padding: 1px 3px; font-size: 10px; pointer-events: none; }
+        .icon-hl { color: #E65100; font-weight: bold; display: flex; align-items: center;}
+        
+        .dirty-active-border { border: 4px solid #D32F2F !important; }
+        .dirty-active-bg { }
+
+        /* Modal */
+        .modal-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; justify-content: center; align-items: flex-end; }
+        .modal-box { background: white; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s; }
+        @keyframes slideUp { from {transform:translateY(100%)} to {transform:translateY(0)} }
+        .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .m-title { font-size: 28px; font-weight: 900; color: var(--theme-color); }
+        .act-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .act-btn { display: flex; flex-direction: column; align-items: center; padding: 12px 5px; border-radius: 8px; background: #f9f9f9; font-weight: bold; font-size: 13px; border: 2px solid transparent; cursor: pointer; }
+        .ctrl-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .stepper { display: flex; border: 1px solid #ccc; border-radius: 15px; overflow: hidden; }
+        .s-btn { width: 36px; height: 32px; background: #ddd; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; }
+        .s-val { width: 36px; display: flex; justify-content: center; align-items: center; font-weight: bold; background: white; }
+        .tgl { padding: 6px 12px; border-radius: 15px; background: #eee; color: #999; font-size: 12px; font-weight: bold; cursor: pointer;}
+        .tgl.on { background: var(--st-green-bd); color: white; }
+        .tgl.on-red { background: var(--st-red-bd); color: white; }
+        .tgl.on-orange { background: #FF5722; color: white; }
+        .line-btn { display: block; width: 100%; padding: 12px; background: #06C755; color: white; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 15px; border: none; cursor: pointer;}
+        
+        .admin-area { padding: 15px; border-top: 1px solid #ddd; margin-top: 20px; }
+        .tool-btn { width: 100%; padding: 12px; background: var(--theme-light); color: white; border-radius: 8px; font-weight: bold; margin-bottom: 8px; border: none; cursor: pointer;}
+        .pin-hint { font-size: 12px; color: #999; text-align: center; margin-top: 10px; text-decoration: underline; cursor: pointer; }
+        
+        /* Log */
+        .log-box { font-size: 12px; color: #555; max-height: 150px; overflow-y: auto; background: #f5f5f5; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px solid #ddd; }
+        .log-item { padding: 6px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .log-time { color: #888; font-family: monospace; margin-right: 8px; }
+        .log-modal-content { height: 80vh; display: flex; flex-direction: column; }
+        .log-list { flex: 1; overflow-y: auto; font-size: 14px; }
+        .log-row { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .log-row:nth-child(even) { background: #fafafa; }
+
+        #alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200,0,0,0.95); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; padding: 20px; text-align: center; }
+        .alert-box { background: white; color: #333; width: 100%; max-width: 400px; border-radius: 10px; padding: 20px; text-align: left; max-height: 60vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);}
+        .alert-title { color: white; font-size: 28px; font-weight: 900; margin-bottom: 20px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);}
+        .alert-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 16px; }
+        .alert-confirm-btn { margin-top: 30px; background: white; color: #D32F2F; width: 100%; padding: 15px; font-size: 20px; border-radius: 10px; font-weight: 900; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+    </style>
+</head>
+<body>
+    <div id="login-layer">
+        <div class="logo-box">
+            <div class="brand-logo-container">
+                <img src="logo.png" class="brand-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                <span class="material-icons" style="font-size:50px; display:none; color:#4E342E;">coffee</span>
+            </div>
+            <div class="app-title">茶雲居房務即時管理系統</div>
+            <div class="app-subtitle">Tea Cloud B&B Real-time Housekeeping System</div>
+        </div>
+
+        <div id="fam-login">
+            <div class="role-btn" onclick="login('boss')"><span class="icon">face</span> 🧔🏻 阿成  (Boss)</div>
+            <div class="role-btn" onclick="login('wife')"><span class="icon">face_3</span> 👩🏻 Ting  (Ibu)</div>
+            <div class="role-btn" onclick="login('mom')"><span class="icon">elderly_woman</span> 👵🏻 媽媽  (Nenek)</div>
+        </div>
+
+        <div id="aya-login" class="aya-login-box">
+            <div style="font-weight:bold; color:var(--theme-color); margin-bottom:15px; font-size:18px;">Selamat Pagi, Aya!</div>
+            <input type="tel" id="aya-pin" class="pin-input" placeholder="PIN" maxlength="4">
+            <button class="pin-submit" onclick="checkPin()">MASUK (開啟)</button>
+        </div>
+
+        <button class="training-link" onclick="startTraining()">
+            <span class="icon">school</span> 練習模式 (Mode Latihan)
+        </button>
+    </div>
+
+    <div id="app-layer">
+        <div class="header">
+            <div class="top-bar">
+                <div class="brand" id="brand-title">茶雲居</div>
+                <div>
+                    <span id="u-tag" class="user-tag">User</span>
+                    <span onclick="logout()" style="font-size:12px; margin-left:8px; opacity:0.8; cursor:pointer;">登出</span>
+                </div>
+            </div>
+            <div class="date-bar">
+                <button class="date-nav-btn" onclick="changeDate(-1)">&#10094;</button>
+                <div class="date-display" style="position:relative;">
+                    <span class="icon" style="font-size:16px">event</span>
+                    <span id="date-txt">...</span>
+                    <span id="today-bdg" class="today-badge" onclick="event.stopPropagation(); goToday();" style="position:relative; z-index:2;">今天</span>
+                    <input type="date" id="native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;" onchange="pickDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault();">
+                </div>
+                <button class="date-nav-btn" onclick="changeDate(1)">&#10095;</button>
+                <div id="week-btn" class="week-btn" onclick="openWeekView()">
+                    <span class="icon" style="font-size:14px">view_module</span>
+                    <span id="week-btn-txt">週覽</span>
+                </div>
+                <input type="date" id="native-dp" style="position:absolute; visibility:hidden;" onchange="pickDate(this.value)">
+            </div>
+            <div class="floor-tabs" id="floor-area">
+                <div class="tab active" onclick="setFloor('all', this)">全部</div>
+                <div class="tab" onclick="setFloor(2, this)">2F</div>
+                <div class="tab" onclick="setFloor(3, this)">3F</div>
+                <div class="tab" onclick="setFloor(6, this)">6F</div>
+            </div>
+            
+            <div id="day-toolbar" class="day-toolbar" style="display:none;">
+                <div style="font-size:12px;font-weight:bold;color:#666;">工具列</div>
+                <button id="day-sync-btn" class="day-sync-btn" onclick="toggleDaySync()">🔁 日曆填色：關</button>
+            </div>
+        </div>
+
+        <div id="room-box" class="room-grid"></div>
+
+        <div id="admin-area" class="admin-area">
+            <button class="tool-btn" onclick="previewAya()">🔭 預覽阿雅視角</button>
+            <div class="pin-hint" onclick="changeAyaPin()">
+                目前 Aya PIN: <span id="pin-display">8888</span> (點擊修改)
+            </div>
+            <button class="tool-btn" style="margin-top:10px; background:#607D8B;" onclick="openLogModal()">📜 查看完整紀錄 (All Logs)</button>
+            <div class="log-box" id="sys-logs"><div>載入中...</div></div>
+        </div>
+    </div>
+
+    <div id="week-view-layer">
+        <div class="wv-header">
+            <div style="font-weight:bold; font-size:16px; position:relative; display:flex; align-items:center;">
+                <span id="wv-title">🗓 未來 30 天總覽</span>
+                <span class="icon" style="font-size:18px; margin-left:4px;">arrow_drop_down</span>
+                <input type="date" id="wv-native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="pickWeekDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault();">
+            </div>
+            <div class="wv-nav" id="wv-nav-ctrls">
+                <button class="wv-nav-btn" onclick="goYesterdayInWeek()" style="background:#8D6E63; color:white; margin-right: 4px;">↺ 昨天</button>
+                <button class="wv-today-btn" onclick="goTodayInWeek()">↺ 回今天</button>
+                <button class="wv-nav-btn" onclick="shiftWeek(-30)">◀</button>
+                <button class="wv-nav-btn" onclick="shiftWeek(30)">下個月 ▶</button>
+            </div>
+            <div onclick="closeWeekView()" style="font-size:24px; cursor:pointer;">×</div>
+        </div>
+        
+        <div id="wv-aya-alert" class="wv-aya-alert hidden">⚠️ Jadwal Kamar (Kamar mungkin berubah)</div>
+
+        <div id="wv-legend" class="wv-legend hidden">
+            <div class="leg-item"><span class="leg-dot" style="background:#F57F17"></span> MASUK</div>
+            <div class="leg-item"><span class="leg-dot" style="background:#4CAF50"></span> LANJUT</div>
+            <div class="leg-item"><span class="leg-dot" style="background:#D32F2F"></span> KELUAR</div>
+        </div>
+        <div id="wv-tools" class="wv-toolbar">
+            <div style="font-weight:bold; color:var(--theme-color);">填色同步 (入>續>退)</div>
+            <div>
+                <button id="wv-sync-toggle" class="wv-sync-btn" onclick="toggleMatrixSync()">🔁 填色：關</button>
+                <button id="wv-save-btn" class="wv-sync-btn hidden" onclick="saveMatrixSync()" style="background:var(--theme-color); color:white;">💾 儲存</button>
+            </div>
+        </div>
+        <div class="wv-grid-container">
+            <table class="wv-table" id="wv-table"></table>
+        </div>
+    </div>
+
+    <div id="alert-overlay">
+        <div class="alert-title">⚠️ PERHATIAN! (注意)</div>
+        <div class="alert-box" id="alert-content"></div>
+        <button class="alert-confirm-btn" onclick="closeAlert()">SAYA MENGERTI (我知道了)</button>
+    </div>
+
+    <div id="modal" class="modal-mask" onclick="if(event.target===this) closeModal()">
+        <div class="modal-box">
+            <div class="m-head">
+                <div>
+                    <div class="m-title" id="m-id">201</div>
+                    <div style="font-size:13px; color:#666;" id="m-type">房型</div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button id="dirty-btn" class="act-btn" style="padding:5px 10px; background:#FFEBEE; border:1px solid #D32F2F; color:#D32F2F;" onclick="markAsDirty()">🧹 標為髒房</button>
+                    <button id="move-btn" class="act-btn" style="padding:5px 10px; background:#E3F2FD; border:1px solid #2196F3; color:#0D47A1;" onclick="startMoveRoom()">🏩 換房</button>
+                    <div onclick="closeModal()" style="font-size:24px; color:#aaa; cursor:pointer;">×</div>
+                </div>
+            </div>
+            <div id="m-body"></div>
+        </div>
+    </div>
+    
+    <div id="log-modal" class="modal-mask" onclick="if(event.target===this) document.getElementById('log-modal').style.display='none'">
+        <div class="modal-box log-modal-content">
+            <div class="m-head">
+                <div class="m-title">📜 當日完整紀錄</div>
+                <div onclick="document.getElementById('log-modal').style.display='none'" style="font-size:24px; color:#aaa; cursor:pointer;">×</div>
+            </div>
+            <div id="log-full-list" class="log-list">
+                <div style="padding:20px; text-align:center;">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvSVlnZ0a00Y-32XKp5zZQS2mMAYWZ9ow",
+            authDomain: "teacloud-housekeeping.firebaseapp.com",
+            databaseURL: "https://teacloud-housekeeping-default-rtdb.firebaseio.com",
+            projectId: "teacloud-housekeeping",
+            storageBucket: "teacloud-housekeeping.firebasestorage.app",
+        };
+
+        const ROOMS = [
+            {id:'601',f:6,t:'景觀四人',m:2}, {id:'602',f:6,t:'景觀雙人',m:1},
+            {id:'603',f:6,t:'景觀雙人',m:1}, {id:'605',f:6,t:'景觀雙人',m:1},
+            {id:'606',f:6,t:'景觀雙人',m:1}, {id:'607',f:6,t:'景觀雙人',m:1},
+            {id:'608',f:6,t:'景觀雙人',m:1},
+            {id:'203',f:2,t:'雙人房',m:1}, {id:'205',f:2,t:'雙人房',m:1},
+            {id:'206',f:2,t:'雙人房',m:1}, {id:'207',f:2,t:'雙人房',m:1},
+            {id:'208',f:2,t:'雙人房',m:1}, {id:'209',f:2,t:'雙人房',m:1},
+            {id:'201',f:2,t:'標準四人',m:2}, {id:'301',f:3,t:'標準四人',m:2},
+            {id:'202',f:2,t:'通舖',m:8,d:true}, {id:'302',f:3,t:'通舖',m:8,d:true}
+        ];
+
+        const ST = {
+            blue:  {c:'blue',  cn:'空房', id:'KOSONG', icon:'✨', cls:'st-blue'},
+            yellow:{c:'yellow',cn:'預訂', id:'BOOKED', icon:'💡', cls:'st-yellow'},
+            green: {c:'green', cn:'入住', id:'ADA TAMU', icon:'🎒', cls:'st-green'},
+            red:   {c:'red',   cn:'退房', id:'KOTOR', icon:'🧹', cls:'st-red'},
+            purple:{c:'purple',cn:'勿擾', id:'DND', icon:'⛔', cls:'st-purple'}
+        };
+
+        const INDO_DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        const INDO_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const CN_DAYS = ['(日)','(一)','(二)','(三)','(四)','(五)','(六)'];
+
+        let db=null, dbRef=null, logRef=null;
+        let user={}; 
+        
+        const getTwDate = () => {
+            const now = new Date();
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(now);
+        };
+        
+        let currDate = getTwDate();
+        let weekStartDate = currDate;
+        let currentWeekDates = []; 
+        let cache = {}; 
+        let trainingCache = {}; 
+        let filter = 'all';
+        let mRoomId = null;
+        let ayaPin = localStorage.getItem('aya_pin') || '8888';
+        let matrixSyncMode = false;
+        let daySyncMode = false; 
+        let isTraining = false;
+        let activeDateRef = null;
+        let moveMode = false;
+        
+        let globalDirty = {};
+        let alertQueue = [];
+        let alertTimer = null;
+        let globalUpdateListener = null;
+        let fullLogs = [];
+
+        window.onload = function() {
+            const savedUser = localStorage.getItem('tea_user');
+            if (savedUser) {
+                try {
+                    const parsedUser = JSON.parse(savedUser);
+                    if (parsedUser && parsedUser.n) {
+                        const url = new URLSearchParams(location.search);
+                        const isAyaUrl = url.get('mode') === 'aya';
+                        if (isAyaUrl) {
+                            if (parsedUser.r === 'staff') login(null, parsedUser);
+                            else { user = {}; localStorage.removeItem('tea_user'); }
+                        } else {
+                            login(null, parsedUser);
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            if (!user.n) {
+                const url = new URLSearchParams(location.search);
+                if (url.get('mode')==='aya') {
+                    showAyaLogin();
+                    document.getElementById('login-layer').style.display = 'flex';
+                } else {
+                    document.getElementById('fam-login').style.display='block';
+                }
+            }
+
+            if(firebaseConfig.databaseURL) {
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.database();
+                    loadData(currDate);
+                    db.ref('settings/aya_pin').on('value', s => { if(s.val()){ayaPin=s.val(); localStorage.setItem('aya_pin', ayaPin);}});
+                    
+                    logRef = db.ref('logs/'+currDate);
+                    logRef.on('value', s => {
+                        fullLogs = [];
+                        if (s.exists()) {
+                            s.forEach(c => fullLogs.unshift(c.val())); 
+                        }
+                        
+                        const miniLogs = fullLogs.slice(0, 5);
+                        const logBox = document.getElementById('sys-logs');
+                        if(logBox) {
+                            logBox.innerHTML = miniLogs.length > 0 
+                                ? miniLogs.map(l => `<div class="log-item"><div><span class="log-time">${l.time}</span> <b>${l.user}</b></div><div>${l.action}</div></div>`).join('')
+                                : '<div style="padding:10px;text-align:center">今日無紀錄</div>';
+                        }
+                            
+                        if(document.getElementById('log-modal').style.display === 'flex') renderFullLogs();
+                    });
+                    
+                    db.ref('global/dirty_flags').on('value', s => {
+                        globalDirty = s.val() || {};
+                        if(!matrixSyncMode && !daySyncMode) {
+                            if(document.getElementById('room-box').innerHTML !== "") render(); 
+                            if(document.getElementById('week-view-layer').style.display === 'flex') updateMatrixDirtyStyles();
+                        }
+                    });
+                    
+                } catch(e){console.error(e);}
+            } else { ensureData(currDate); }
+        };
+
+        function toggleDaySync() {
+            daySyncMode = !daySyncMode;
+            const btn = document.getElementById('day-sync-btn');
+            if(daySyncMode) {
+                btn.innerText = "🔁 日曆填色：開";
+                btn.style.background = "#FF9800"; 
+                // Alert removed
+            } else {
+                btn.innerText = "🔁 日曆填色：關";
+                btn.style.background = "#ccc";
+            }
+            render(); 
+        }
+
+        function updateMatrixDirtyStyles() {
+            const dates = [];
+            for(let i=0; i<30; i++) { 
+                 let dt = new Date(weekStartDate + "T12:00:00");
+                 dt.setDate(dt.getDate()+i);
+                 const offset = dt.getTimezoneOffset() * 60000;
+                 dates.push((new Date(dt - offset)).toISOString().split('T')[0]);
+            }
+            
+            ROOMS.forEach(r => {
+                const isDirty = globalDirty[r.id] && !isTraining;
+                dates.forEach(d => {
+                    const cell = document.getElementById(`td-${d}-${r.id}`);
+                    if(cell) {
+                        const content = cell.querySelector('.cell-content');
+                        if(content) {
+                            if(isDirty) {
+                                content.classList.add('dirty-active-border'); 
+                                if(content.classList.contains('c-blue')) {
+                                    content.classList.add('dirty-active-bg');
+                                }
+                                if(!content.innerHTML.includes('🧹') && content.classList.contains('c-blue')) updateCellUI(d, r.id);
+                            } else {
+                                content.classList.remove('dirty-active-border');
+                                content.classList.remove('dirty-active-bg');
+                                if(content.innerHTML.includes('🧹')) updateCellUI(d, r.id);
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function safeGetRoom(date, rid) {
+            let target = isTraining ? trainingCache : cache;
+            if (!target[date]) target[date] = {};
+            let raw = target[date][rid];
+            if (!raw) { raw = { s: 'blue', n: {} }; target[date][rid] = raw; }
+            if (!raw.s) raw.s = 'blue'; 
+            if (!raw.n) raw.n = {};     
+            if (raw.n.peopleCount) { raw.n.p = raw.n.peopleCount; delete raw.n.peopleCount; }
+            if (raw.n.extraBed) { raw.n.bed = raw.n.extraBed; delete raw.n.extraBed; }
+            if (raw.status) { raw.s = raw.status; delete raw.status; }
+            return raw;
+        }
+
+        function loadData(date) {
+            if(isTraining) { ensureData(date); render(); return; }
+            if(!db) { ensureData(date); render(); return; }
+            
+            if(activeDateRef) activeDateRef.off();
+            activeDateRef = db.ref('status/'+date);
+            activeDateRef.on('value', s => {
+                cache[date] = s.val() || {};
+                ensureData(date);
+                if(date === currDate) render();
+            });
+        }
+        function ensureData(date) {
+            let target = isTraining ? trainingCache : cache;
+            if(!target[date]) target[date] = {};
+            ROOMS.forEach(r => { if(!target[date][r.id]) target[date][r.id] = {s:'blue', n:{}}; });
+        }
+
+        function showAyaLogin() { document.getElementById('fam-login').style.display='none'; document.getElementById('aya-login').style.display='flex'; }
+        
+        function login(role, savedUser = null) {
+            if (savedUser) {
+                user = savedUser;
+            } else {
+                if(role==='boss') user={n:'🧔🏻 阿成',r:'admin',l:'cn'};
+                if(role==='wife') user={n:'👩🏻 Ting',r:'admin',l:'cn'};
+                if(role==='mom')  user={n:'👵🏻 媽媽',r:'admin',l:'cn'};
+                if(role==='aya')  user={n:'👩🏼 Aya', r:'staff',l:'id'};
+                localStorage.setItem('tea_user', JSON.stringify(user));
+            }
+
+            document.getElementById('login-layer').style.display='none';
+            document.getElementById('app-layer').style.display='block';
+            document.getElementById('u-tag').innerText = user.n;
+
+            if(user.r==='staff') {
+                document.body.classList.add('aya-mode');
+                document.getElementById('admin-area').style.display='none';
+                document.getElementById('wv-tools').style.display='none';
+                document.getElementById('day-toolbar').style.display='none'; 
+                
+                if(!isTraining) document.getElementById('wv-nav-ctrls').style.display='none'; 
+                document.getElementById('wv-legend').classList.remove('hidden');
+                document.getElementById('wv-aya-alert').classList.remove('hidden'); 
+                
+                // --- 更新：改為 8 天總覽字眼 ---
+                document.getElementById('week-btn-txt').innerText = 'Jadwal 8-Hari';
+                document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
+                
+                if(!isTraining) { 
+                    currDate = getTwDate(); 
+                    loadData(currDate); 
+                    setupAyaListener(); 
+                }
+            } else {
+                document.getElementById('day-toolbar').style.display='flex'; 
+            }
+            
+            if(isTraining) {
+                document.body.classList.add('training-mode');
+                document.getElementsByClassName('app-title')[0].innerText = "練習模式 (LATIHAN)";
+                if(user.r!=='staff') setupAyaListener(); 
+            }
+            updateDateUI();
+            render();
+        }
+
+        function setupAyaListener() {
+            if(isTraining) return; 
+            if(globalUpdateListener) globalUpdateListener.off();
+            globalUpdateListener = db.ref('global/last_update');
+            let initial = true;
+            globalUpdateListener.on('value', snap => {
+                if(initial) { initial=false; return; } 
+                // Removed time check to fix invalid popup issue
+                if(snap.val()) {
+                     db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
+                }
+            });
+        }
+        
+        function queueAlert(rid, val) {
+            alertQueue.push({rid, val});
+            if(alertTimer) clearTimeout(alertTimer);
+            alertTimer = setTimeout(showAlertModal, 2000);
+        }
+        
+        function showAlertModal() {
+            const overlay = document.getElementById('alert-overlay');
+            const content = document.getElementById('alert-content');
+            content.innerHTML = `<div class="alert-item" style="font-size:18px; padding:20px;">⚠️ <b>ADA PERUBAHAN BARU!</b><br><br>Data kamar telah diperbarui.<br>Silahkan cek status kamar.<br>(房況已更新，請確認)</div>`;
+            overlay.style.display = 'flex';
+            alertQueue = [];
+        }
+        
+        function closeAlert() { document.getElementById('alert-overlay').style.display='none'; }
+
+        function startTraining() {
+            if(confirm("進入練習模式？ (Masuk Mode Latihan?)\n系統將自動產生測試考題。\n重整網頁可退出。")) {
+                isTraining = true;
+                seedTrainingData();
+                login('aya'); 
+            }
+        }
+        function seedTrainingData() {
+            const t = trainingCache; const d = currDate; ensureData(d);
+            t[d]['601'] = {s:'red', n:{late:true}};
+            t[d]['201'] = {s:'red', n:{flash:true}};
+            t[d]['205'] = {s:'yellow', n:{bed:1}};
+            t[d]['202'] = {s:'green', n:{p:8}};
+        }
+        function checkPin() { if(document.getElementById('aya-pin').value === ayaPin) login('aya'); else { alert('PIN Salah!'); document.getElementById('aya-pin').value=''; }}
+        function logout() { 
+            localStorage.removeItem('tea_user'); 
+            if (window.location.search.includes('mode=aya')) {
+                window.location.reload();
+            } else {
+                window.location.href = window.location.pathname;
+            }
+        }
+        function changeAyaPin() {
+            if(isTraining) return;
+            const newPin = prompt("新 PIN 碼 (4位數)", ayaPin);
+            if(newPin && newPin.length===4) {
+                ayaPin = newPin; localStorage.setItem('aya_pin', ayaPin);
+                // document.getElementById('pin-display').innerText = ayaPin;
+                if(db) db.ref('settings/aya_pin').set(ayaPin);
+            }
+        }
+        function previewAya() { if(confirm('切換阿雅視角？')) login('aya'); }
+
+        // 修改此函數，允許阿雅查看前一天(diff < -1才阻擋)
+        function changeDate(d) {
+            let dt = new Date(currDate + "T12:00:00");
+            dt.setDate(dt.getDate()+d);
+            const offset = dt.getTimezoneOffset() * 60000;
+            const next = (new Date(dt - offset)).toISOString().split('T')[0];
+            
+            if(user.r==='staff' && !isTraining) {
+                const today = getTwDate();
+                const d1 = new Date(next); 
+                const d2 = new Date(today);
+                const diff = Math.round((d1-d2)/(86400000));
+                
+                // 放寬限制：允許 diff 為 -1 (昨天)
+                if(diff < -1 || diff > 7) { 
+                    alert('Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)'); 
+                    return; 
+                }
+            }
+            pickDate(next);
+        }
+        
+        function pickDate(v) { currDate = v; loadData(currDate); updateDateUI(); render(); }
+        function updateDateUI() {
+            const today = getTwDate();
+            const dateObj = new Date(currDate + "T12:00:00");
+            let txt = currDate;
+            let badge = '今天';
+            if(user.l==='id') {
+                const dayIdx = dateObj.getDay();
+                txt = `${INDO_DAYS[dayIdx]}, ${currDate.split('-')[2]}-${currDate.split('-')[1]}`; 
+                badge = 'HARI INI';
+            } else {
+                const dayIdx = dateObj.getDay();
+                txt = `${currDate} ${CN_DAYS[dayIdx]}`;
+            }
+            document.getElementById('date-txt').innerText = txt;
+            document.getElementById('today-bdg').innerText = (currDate!==today) ? (user.l==='id'?'↺ HARI INI':'↺ 回今天') : badge;
+            document.getElementById('today-bdg').style.display = (currDate!==today)?'inline-block':'none';
+        }
+        function goToday() { pickDate(getTwDate()); }
+
+        function setFloor(f, el) { filter = f; document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); el.classList.add('active'); render(); }
+        function render() {
+            const box = document.getElementById('room-box');
+            box.innerHTML = '';
+            let list = ROOMS.filter(r => filter==='all' || r.f==filter);
+
+            if(user.r==='staff') {
+                list.sort((a,b) => {
+                    const da = globalDirty[a.id] ? 0 : 1; 
+                    const db = globalDirty[b.id] ? 0 : 1;
+                    if(da !== db) return da - db; 
+
+                    const sa = safeGetRoom(currDate, a.id).s; const sb = safeGetRoom(currDate, b.id).s;
+                    const na = safeGetRoom(currDate, a.id).n; const nb = safeGetRoom(currDate, b.id).n;
+                    const score = (s, n) => {
+                        if(s==='red' && !n.late) return 0;
+                        if(s==='red' && n.late) return 1;
+                        if(s==='yellow') return 2; if(s==='green') return 3; return 4;
+                    };
+                    return score(sa, na) - score(sb, nb);
+                });
+            }
+
+            list.forEach(r => {
+                const d = safeGetRoom(currDate, r.id); 
+                const st = ST[d.s] || ST['blue'];
+                const n = d.n;
+                const isId = user.l === 'id';
+                const isDirty = globalDirty[r.id] && !isTraining; 
+
+                const card = document.createElement('div');
+                card.className = `card ${st.cls}`;
+                
+                let statusTextContent = isId ? st.id : st.cn;
+
+                // Dirty visual overrides
+                if (isDirty) {
+                    card.style.border = "4px solid #D32F2F"; 
+                    statusTextContent = isId ? 'KOTOR' : '已退房';
+                    // No background override
+                }
+
+                if(d.s==='red' && n.late) card.style.opacity='0.7';
+
+                let tags = '';
+                if(n.late) tags+=`<span class="tag">🌃 ${isId?'Nanti':'晚'}</span>`;
+                if(n.flash) tags+=`<span class="tag tag-flash">⚡ ${isId?'TAMU DADAKAN':'現場客'}</span>`;
+                if(r.d && n.p) tags+=`<span class="tag tag-high">👩 ${n.p} ${isId?'Kasur':'床'}</span>`;
+                if(n.bed) tags+=`<span class="tag tag-high">🛏️ +${n.bed}</span>`;
+                if(n.q) tags+=`<span class="tag tag-high"><span class="icon" style="font-size:14px">layers</span> +${n.q} ${isId?'Selimut':'被'}</span>`;
+                if(n.out) tags+=`<span class="tag" style="background:#E0F7FA; color:#006064;">🏃 外出</span>`;
+                if(n.bath) tags+=`<span class="tag">🛁 Bak</span>`;
+                if(n.msg) tags+=`<span class="tag" style="color:purple">💬 Note</span>`;
+
+                let moon = (d.s==='red'&&n.late)?'<div class="moon-icon">🌃</div>':'';
+                // Append Guest Out icon for both Admin and Aya if Green (Occupied)
+                if (d.s === 'green' && n.out) {
+                    statusTextContent += ' 🏃';
+                }
+
+                card.innerHTML = `${moon}<div class="r-head"><div><div class="r-no">${r.id}</div><div class="r-type">${isId?'Kamar':''} ${r.t}</div></div><div style="text-align:right"><div class="st-icon">${st.icon}</div><div class="st-txt">${statusTextContent}</div></div></div><div class="tags">${tags}</div>`;
+                
+                const evts = `onclick="handleGridClick('${currDate}','${r.id}', event)" oncontextmenu="handleGridRightClick('${currDate}','${r.id}', event)" onmousedown="handleGridPressStart('${currDate}','${r.id}', event)" onmouseup="handleGridPressEnd('${currDate}','${r.id}')" ontouchstart="handleGridPressStart('${currDate}','${r.id}')" ontouchend="handleGridPressEnd('${currDate}','${r.id}')"`;
+                
+                if (user.r !== 'staff') {
+                    // Update attributes with new handlers
+                    card.setAttribute('oncontextmenu', 'return false;');
+                    card.setAttribute('ontouchstart', `handleGridPressStart('${currDate}','${r.id}', event)`);
+                    card.setAttribute('onmousedown', `handleGridPressStart('${currDate}','${r.id}', event)`);
+                    card.setAttribute('ontouchmove', `handleGridMove(event)`);
+                    card.setAttribute('ontouchend', `handleGridPressEnd('${currDate}','${r.id}')`);
+                    card.setAttribute('onmouseup', `handleGridPressEnd('${currDate}','${r.id}')`);
+                    card.setAttribute('onclick', `handleGridClick('${currDate}','${r.id}', event)`);
+                } else { 
+                    card.onclick = () => openModal(r.id);
+                }
+                
+                box.appendChild(card);
+            });
+        }
+
+        // Matrix - 30 Days View
+        function openWeekView() { 
+            if(user.r === 'staff') {
+                // --- 更新：阿雅模式開啟週覽時，起始日期直接退回一天(昨天) ---
+                let dt = new Date(getTwDate() + "T12:00:00");
+                dt.setDate(dt.getDate() - 1);
+                const offset = dt.getTimezoneOffset() * 60000;
+                weekStartDate = (new Date(dt - offset)).toISOString().split('T')[0];
+            } else {
+                weekStartDate = getTwDate();
+            }
+            document.getElementById('week-view-layer').style.display='flex'; 
+            refreshWeekView(); 
+        }
+        function shiftWeek(d) { 
+            let dt = new Date(weekStartDate + "T12:00:00");
+            dt.setDate(dt.getDate()+d); 
+            const offset = dt.getTimezoneOffset() * 60000;
+            weekStartDate = (new Date(dt - offset)).toISOString().split('T')[0];
+            refreshWeekView();
+        }
+        function goTodayInWeek() { weekStartDate=getTwDate(); refreshWeekView(); }
+        
+        function goYesterdayInWeek() {
+            let dt = new Date(getTwDate() + "T12:00:00");
+            dt.setDate(dt.getDate() - 1);
+            const offset = dt.getTimezoneOffset() * 60000;
+            weekStartDate = (new Date(dt - offset)).toISOString().split('T')[0];
+            refreshWeekView();
+        }
+
+        function pickWeekDate(v) {
+            if(v) {
+                weekStartDate = v;
+                refreshWeekView();
+            }
+        }
+        
+        async function refreshWeekView() {
+            const tbl = document.getElementById('wv-table');
+            tbl.innerHTML = '<tr><td>Loading...</td></tr>';
+            
+            // Generate Year Month Title
+            const startObj = new Date(weekStartDate);
+            const yyyy = startObj.getFullYear();
+            const mm = startObj.getMonth() + 1;
+            
+            // --- 更新：如果是員工，標題顯示 8 天總覽 ---
+            if(user.r === 'staff') {
+                document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
+            } else {
+                document.getElementById('wv-title').innerText = `🗓 ${yyyy}年 ${mm}月`;
+            }
+
+            const dates = [];
+            // --- 更新：阿雅模式改為顯示 8 天 (昨天+今天+未來6天) ---
+            const daysToShow = user.r === 'staff' ? 8 : 30;
+            for(let i=0; i<daysToShow; i++) { 
+                 let dt = new Date(weekStartDate + "T12:00:00");
+                dt.setDate(dt.getDate()+i);
+                const offset = dt.getTimezoneOffset() * 60000;
+                dates.push((new Date(dt - offset)).toISOString().split('T')[0]);
+            }
+
+            if(!isTraining && db) {
+                const promises = dates.map(d => db.ref('status/'+d).once('value'));
+                const snaps = await Promise.all(promises);
+                snaps.forEach((s, i) => { cache[dates[i]] = s.val() || {}; });
+            } 
+            renderWeekTable(dates);
+        }
+
+        function renderWeekTable(dates) {
+            const tbl = document.getElementById('wv-table');
+            let html = '';
+            const today = getTwDate(); 
+
+            // Month Row - Inject YYYY/MM into first cell
+            const startObj = new Date(weekStartDate);
+            const ym = `${startObj.getFullYear()}/${startObj.getMonth()+1}`;
+            html += `<thead><tr class="month-row"><th class="wv-room-col">${ym}</th>`;
+            
+            let currentMonth = '';
+            dates.forEach((d, i) => {
+                const mIdx = parseInt(d.split('-')[1]) - 1;
+                const monthName = user.l==='id' ? INDO_MONTHS[mIdx] : `${mIdx+1}月`;
+                if(monthName !== currentMonth) {
+                    html += `<th style="border-left:2px solid #999; text-align:left; padding-left:5px; color:#555; font-weight:900;">${monthName}</th>`;
+                    currentMonth = monthName;
+                } else {
+                    html += `<th></th>`;
+                }
+            });
+            html += '</tr>';
+
+            // Date Row
+            html += '<tr><th class="wv-room-col"></th>';
+            dates.forEach(d => {
+                const dayIdx = new Date(d + "T12:00:00").getDay();
+                const dateNum = d.split('-')[2];
+                let lbl = user.l==='id' ? `${INDO_DAYS[dayIdx]} ${dateNum}` : `${dateNum} ${CN_DAYS[dayIdx]}`;
+                let thClass = (dayIdx === 0 || dayIdx === 6) ? 'th-weekend' : '';
+   
+                if(d === today) thClass += ' today-col'; 
+                html += `<th class="${thClass}" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''}">${lbl}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const target = isTraining ? trainingCache : cache;
+            ROOMS.forEach(r => {
+                html += `<tr><td class="wv-room-col">${r.id}</td>`;
+                dates.forEach(d => {
+                    const cd = safeGetRoom(d, r.id);
+                    const cls = 'c-'+cd.s; 
+             
+                    const isId = user.l === 'id';
+                    let code = '';
+                    if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
+                    else { if(cd.s==='yellow')code='入';
+                    else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; }
+
+          
+                    let icons = '';
+                    if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isId?'K':'床'}</span> `;
+                    if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
+                    if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
+        
+                    if(cd.n.bath) icons += `🛁 `;
+                    if(cd.n.msg) icons += `💬 `;
+                    let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
+                    let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
+                    // Logic: If Dirty, show visual
+                    let isDirty = (globalDirty[r.id] && !isTraining);
+            
+                    let dirtyMark = '';
+                    if (isDirty) { // 修正: 不論改成什麼顏色，只要是髒房，週覽表的掃把就會一直顯示
+                        dirtyMark = '<span style="position:absolute;bottom:2px;left:2px;font-size:10px;color:red;">🧹</span>';
+                    }
+
+                    let bottomRow = icons ?
+                    `<div class="cell-icons">${icons}</div>` : '';
+                    
+                    // Add icon to LJT/Continue in Matrix if Guest Out (All users)
+                    if (cd.s === 'green' && cd.n.out) {
+                        code += ' 🏃';
+                    }
+                    
+                    let statusText = `<div class="cell-status">${code}</div>`;
+                    
+                    let finalCls = cls;
+                    if(isDirty) {
+                        finalCls += ' dirty-active-border';
+                        if(cd.s === 'blue') finalCls += ' dirty-active-bg';
+                    }
+
+                    const evts = `onclick="handleGridClick('${d}','${r.id}', event)" oncontextmenu="return false;"
+                    ontouchstart="handleGridPressStart('${d}','${r.id}', event)" onmousedown="handleGridPressStart('${d}','${r.id}', event)" ontouchmove="handleGridMove(event)" onmouseup="handleGridPressEnd('${d}','${r.id}')" ontouchend="handleGridPressEnd('${d}','${r.id}')"`;
+
+                    html += `<td id="td-${d}-${r.id}" ${evts}><div class="cell-content ${finalCls}">${moon}${flash}${dirtyMark}${statusText}${bottomRow}</div></td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            tbl.innerHTML = html;
+        }
+
+        // v10.9 Advanced Interaction with Smart Scroll Detection
+        let pressTimer;
+        let isLongPress = false;
+        let startX = 0;
+        let startY = 0;
+        let isScrolling = false;
+
+        function handleGridPressStart(d, rid, e) { 
+            isLongPress = false;
+            isScrolling = false;
+            
+            if (e.type === 'touchstart') {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+
+            pressTimer = setTimeout(() => { 
+                if (!isScrolling) { 
+                    isLongPress = true; 
+                    openModalFromGrid(d, rid);
+                    if(navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 600);
+        }
+
+        function handleGridMove(e) {
+            if (!pressTimer) return;
+            let clientX, clientY;
+            if (e.type === 'touchmove') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            let diffX = Math.abs(clientX - startX);
+            let diffY = Math.abs(clientY - startY);
+
+            if (diffX > 10 || diffY > 10) {
+                isScrolling = true;
+                clearTimeout(pressTimer);
+            }
+        }
+
+        function handleGridPressEnd(d, rid) { clearTimeout(pressTimer); }
+        
+        function handleGridClick(d, rid, e) { 
+            if(isLongPress) return;
+            // Check both modes
+            if(matrixSyncMode || (daySyncMode && d === currDate)) {
+                matrixCycle(d, rid);
+            } else {
+                openModalFromGrid(d, rid);
+            }
+        }
+        function handleGridRightClick(d, rid, e) { e.preventDefault(); openModalFromGrid(d, rid); }
+        function openModalFromGrid(d, rid) { 
+            currDate = d;
+            openModal(rid); 
+        }
+
+        function forceCloseWeekView() { document.getElementById('week-view-layer').style.display='none'; matrixSyncMode=false; render(); }
+        function closeWeekView() { forceCloseWeekView(); }
+
+        function toggleMatrixSync() {
+            matrixSyncMode = !matrixSyncMode;
+            const btn = document.getElementById('wv-sync-toggle'); const save = document.getElementById('wv-save-btn');
+            if(matrixSyncMode) { btn.classList.add('active'); btn.innerText='🔁 填色：開'; save.classList.remove('hidden'); }
+            else { btn.classList.remove('active'); btn.innerText='🔁 填色：關'; save.classList.add('hidden'); }
+        }
+
+        function matrixCycle(d, rid) {
+            const cyc = ['blue','yellow','green','red'];
+            const target = isTraining ? trainingCache : cache;
+            const cur = safeGetRoom(d, rid).s;
+            let idx = cyc.indexOf(cur); if(idx===-1) idx=0;
+            let next = cyc[(idx+1)%4];
+            
+            if (!target[d]) target[d] = {};
+            if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
+            // Check-in Guard in Matrix
+            if (globalDirty[rid] && next === 'green' && !isTraining) {
+                if(!confirm("⚠️ 警告：此房間尚未打掃 (Dirty)！\n確定要標記為續住/入住嗎？")) return;
+            }
+
+            target[d][rid].s = next;
+            if(next==='blue') target[d][rid].n = {};
+            if (!isTraining && db) { 
+                 if (next === 'red') db.ref('global/dirty_flags/'+rid).set(true);
+                 // 移除自動清空髒房狀態的邏輯，保護髒房任務不會在誤觸時消失
+                 // if (next === 'blue') db.ref('global/dirty_flags/'+rid).set(false);
+                 
+                 // Only trigger alert if modifying TODAY's data
+                 if (user.r === 'admin' && d === getTwDate()) { 
+                     db.ref('global/last_update').set(Date.now());
+                 } 
+                 db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+            }
+
+            updateCellUI(d, rid);
+        }
+
+        function updateCellUI(d, rid) {
+            const cell = document.getElementById(`td-${d}-${rid}`);
+            if(!cell) return;
+            const target = isTraining ? trainingCache : cache;
+            const cd = target[d][rid];
+            const cls = 'c-'+cd.s;
+            const isId = user.l === 'id';
+            const r = ROOMS.find(x=>x.id===rid);
+            const today = getTwDate(); 
+
+            let code = '';
+            if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
+            else { if(cd.s==='yellow')code='入';
+            else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; }
+
+            let icons = '';
+            if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isId?'K':'床'}</span> `;
+            if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
+            if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
+            if(cd.n.bath) icons += `🛁 `;
+            if(cd.n.msg) icons += `💬 `;
+            let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
+            let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
+            let isDirty = (globalDirty[rid] && !isTraining);
+            
+            let dirtyMark = '';
+            if (isDirty) { // 修正: 不論改成什麼顏色，只要是髒房，週覽表的掃把就會一直顯示
+                dirtyMark = '<span style="position:absolute;bottom:2px;left:2px;font-size:10px;color:red;">🧹</span>';
+            }
+
+            // Append icon for Guest Out for All Users if Green (LJT)
+            if (cd.s === 'green' && cd.n.out) {
+                code += ' 🏃';
+            }
+
+            let statusText = `<div class="cell-status">${code}</div>`;
+            let bottomRow = icons ? `<div class="cell-icons">${icons}</div>` : '';
+
+            let finalCls = cls;
+            if(isDirty) {
+                finalCls += ' dirty-active-border';
+                if(cd.s === 'blue') finalCls += ' dirty-active-bg';
+            }
+
+            cell.innerHTML = `<div class="cell-content ${finalCls}">${moon}${flash}${dirtyMark}${statusText}${bottomRow}</div>`;
+        }
+
+        // v10.10: Silent Save (No Alert)
+        function saveMatrixSync() {
+            if(!isTraining && db) { 
+                 for(let date in cache) db.ref('status/'+date).update(cache[date]);
+                 // Only update timestamp if TODAY is in the cache being saved
+                 if (user.r === 'admin' && cache[getTwDate()]) db.ref('global/last_update').set(Date.now());
+            }
+            toggleMatrixSync();
+        }
+        function jumpTo(date, rid) { currDate = date;
+        loadData(currDate); updateDateUI(); closeWeekView(); render(); setTimeout(()=>openModal(rid),100); }
+
+        // --- Move Room Logic (Optimized v10.6) ---
+        function startMoveRoom() {
+            if(user.r==='staff') return;
+            if(moveMode) return;
+            moveMode = true;
+            const btn = document.getElementById('move-btn');
+            btn.innerText = '請點選目標空房...'; 
+            btn.style.background = '#FFEB3B';
+            btn.style.color = '#333';
+            closeModal();
+        }
+
+        function executeMove(toRid) {
+            const fromRid = mRoomId;
+            const d = safeGetRoom(currDate, fromRid);
+            const newData = JSON.parse(JSON.stringify(d)); 
+            
+            updateRoom(toRid, newData);
+            updateRoom(fromRid, {s:'blue', n:{}});
+            
+            if(globalDirty[fromRid]) {
+                if(!isTraining && db) {
+                    db.ref('global/dirty_flags/'+toRid).set(true);
+                    db.ref('global/dirty_flags/'+fromRid).set(false);
+                }
+                globalDirty[toRid] = true;
+                globalDirty[fromRid] = false;
+            }
+
+            if(document.getElementById('week-view-layer').style.display === 'flex') {
+                updateCellUI(currDate, fromRid);
+                updateCellUI(currDate, toRid);
+            }
+
+            moveMode = false;
+            const btn = document.getElementById('move-btn');
+            if(btn) {
+                btn.innerText = '🏩 換房';
+                btn.style.background = '#E3F2FD';
+                btn.style.color = '#0D47A1';
+            }
+        }
+
+        function openModal(rid) {
+            if(moveMode) {
+                const target = safeGetRoom(currDate, rid);
+                if(target.s !== 'blue') { alert('無法換房：目標房間必須是「空房」！'); return; }
+                executeMove(rid);
+                return;
+            }
+
+            mRoomId = rid;
+            const d = safeGetRoom(currDate, rid); 
+            const n = d.n; 
+            const r = ROOMS.find(x=>x.id===rid);
+            
+            document.getElementById('modal').style.display='flex';
+            document.getElementById('m-id').innerText = rid; 
+            document.getElementById('m-type').innerText = r.t;
+            
+            document.getElementById('dirty-btn').style.display = (user.r==='staff') ? 'none' : 'block';
+            document.getElementById('move-btn').style.display = (user.r==='staff') ? 'none' : 'block';
+            
+            const mvBtn = document.getElementById('move-btn');
+            if(mvBtn) { mvBtn.innerText = '🏩 換房'; mvBtn.style.background = '#E3F2FD';
+            mvBtn.style.color = '#0D47A1'; }
+
+            const body = document.getElementById('m-body');
+            body.innerHTML = '';
+
+            if(user.r==='staff') {
+                let ins = '';
+                if(d.s==='red') ins += n.late ? `🌃 <b>Tamu di kamar ini akan datang terlambat, jadi bisa utamakan membersihkan kamar lain dulu.</b><br>` : `🧹 <b>PRIORITAS (Segera)</b><br>`;
+                if(n.flash) ins += `⚡ <b>TAMU DADAKAN (現場客)</b><br>`;
+                if(r.d && n.p) ins += `👩 Siapkan <b>${n.p} Kasur</b><br>`;
+                if(n.bed) ins += `🛏️ +${n.bed} Extra Bed<br>`;
+                if(n.q) ins += `<span class="icon">layers</span> +${n.q} Selimut<br>`;
+                if(n.out) ins += `🏃 <b>Tamu sedang keluar.</b><br>`;
+                if(n.bath) ins += `🛁 Bak Bayi<br>`;
+                if(n.msg) ins += `💬 ${n.msg} <a href="https://translate.google.com/?sl=zh-TW&tl=id&text=${encodeURIComponent(n.msg)}&op=translate" target="_blank">🌐 Translate</a>`;
+                
+                if(d.s==='red' || globalDirty[rid]) {
+                    body.innerHTML = `<div style="background:#FFF3E0; padding:15px; border-radius:10px; margin-bottom:15px; font-size:16px;">${ins||'Silahkan sapu.'}</div><button class="line-btn" style="background:#2196F3" onclick="finishCleaning('${rid}')">✅ SELESAI (完成)</button>`;
+                } else if (d.s === 'purple') {
+                    body.innerHTML = `<div style="padding:15px; color:#666; font-size:16px; font-weight:bold;">⛔ Kamar yang berkelanjutan tidak perlu dibersihkan.</div>`;
+                } else {
+                    body.innerHTML = `<div style="padding:15px; color:#666;">${ins||'Status: '+ST[d.s].id}<br><br>Tidak ada tindakan.</div>`;
+                }
+                return;
+            }
+
+            let cleanBtn = '';
+            if (globalDirty[rid] && !isTraining) {
+                cleanBtn = `
+                <div style="margin-bottom:15px;">
+                    <button class="act-btn" style="width:100%; background:#FFEBEE; border:2px solid #D32F2F; color:#D32F2F; padding:15px; font-size:18px; flex-direction:row; justify-content:center; gap:10px;" onclick="finishCleaning('${rid}')">
+                        <span style="font-size:24px">✅</span> <span>完成打掃 (消除紅框)</span>
+                    </button>
+                </div>`;
+            }
+
+            const acts = [{c:'green',l:'入住'},{c:'red',l:'退房'},{c:'blue',l:'空房'},{c:'yellow',l:'預訂'},{c:'purple',l:'勿擾'}];
+            let btns = acts.map(x => `<div class="act-btn" onclick="setStatus('${x.c}')" style="border:2px solid ${x.c===d.s?'#333':'transparent'}"><div style="font-size:24px">${ST[x.c].icon}</div><div>${x.l}</div></div>`).join('');
+            
+            body.innerHTML = `${cleanBtn}<div class="act-grid">${btns}</div>`;
+
+            let ctrls = '';
+            if(r.d) ctrls += mkStp('👩 人數', 'p', n.p||0, 8); else ctrls += mkStp('🛏️ 加床', 'bed', n.bed||0, r.m);
+            ctrls += mkStp('🌫️ 加被', 'q', n.q||0, 5);
+            
+            // New Guest Out Toggle
+            ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)">${n.out?'🏃 外出':'在房'}</div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
+
+            ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)">${n.bath?'✅ 需要':'無'}</div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)">${n.late?'🌃 晚到':'正常'}</div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)">${n.flash?'⚡ 現場客':'一般'}</div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
+            placeholder="備註...">${n.msg||''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button><a href="#" id="line-lnk" target="_blank" class="line-btn">💬 Line 通知阿雅</a>`;
+            body.innerHTML += `<div style="border-top:1px solid #eee;">${ctrls}</div>`;
+            const lineTxt = `Aya, Kamar ${mRoomId}. ${d.s==='red'?'KOTOR, sapu.':''} ${n.msg||''}`;
+            document.getElementById('line-lnk').href = `https://line.me/R/msg/text/?${encodeURIComponent(lineTxt)}`;
+        }
+
+        function closeModal() { document.getElementById('modal').style.display='none';
+            if(document.getElementById('week-view-layer').style.display==='flex') {
+                updateCellUI(currDate, mRoomId);
+            }
+        }
+        
+        function setStatus(s) { 
+             // v6.4 Check-in Guard
+            if (s === 'green' && globalDirty[mRoomId]) {
+                if (!confirm("⚠️ 警告：此房間尚未打掃 (Dirty)！\n確定要讓客人入住嗎？")) return;
+            }
+            
+            updateRoom(mRoomId, {s:s});
+            closeModal(); 
+            logAction(`更變 ${mRoomId} 狀態為 ${ST[s].cn}`); 
+        }
+        
+        function saveNote(close = false) {
+            const n = {
+                p: parseInt(document.getElementById('val-p')?.innerText||0),
+                bed: parseInt(document.getElementById('val-bed')?.innerText||0),
+                q: parseInt(document.getElementById('val-q')?.innerText||0),
+                bath: document.getElementById('v-bath').value==='1',
+                late: document.getElementById('v-late').value==='1',
+                flash: document.getElementById('v-flash').value==='1',
+                out: document.getElementById('v-out').value==='1',
+                msg: document.getElementById('v-msg').value
+            };
+            updateRoom(mRoomId, {n:n}); 
+            if(close) closeModal(); 
+            logAction(`更新 ${mRoomId} 備註`);
+        }
+
+        // --- Make Webhook 串接觸發器 ---
+        const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/ksddatrko6bxxuw6jzfsl6qqowwneu5u"; 
+
+        async function sendWebhook(actionType, roomId, extraData = {}) {
+            if (isTraining || !MAKE_WEBHOOK_URL.startsWith("http")) return; 
+
+            const payload = {
+                action: actionType,      
+                room: roomId,            
+                user: user.n,             
+                time: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
+                ...extraData
+            };
+
+            try {
+                await fetch(MAKE_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                console.log("Webhook 傳送成功:", payload);
+            } catch (error) {
+                console.error("Webhook 傳送失敗:", error);
+            }
+        }
+
+        function updateRoom(rid, diff) {
+            const target = isTraining ?
+            trainingCache : cache;
+            const d = target[currDate][rid];
+            if(diff.s) d.s = diff.s; if(diff.n) d.n = diff.n;
+            if(diff.s === 'red' && d.n.late) diff.n.late = true;
+            
+            if(!isTraining && db) {
+                db.ref('status/'+currDate+'/'+rid).update(diff);
+                // v6.6: Only Admin triggers alert AND ONLY IF EDITING TODAY
+                if (user.r === 'admin' && currDate === getTwDate()) {
+                    db.ref('global/last_update').set(Date.now());
+                }
+                
+                if (diff.s === 'red') {
+                    db.ref('global/dirty_flags/'+rid).set(true);
+                    sendWebhook('checkout', rid, { status: 'red' });
+                }
+                // 移除自動清空髒房狀態的邏輯，保護髒房任務不會在誤觸時消失
+                // if (diff.s === 'blue') db.ref('global/dirty_flags/'+rid).set(false);
+            }
+            render();
+        }
+        
+        function finishCleaning(rid, status) {
+            if (!isTraining && db) {
+                db.ref('global/dirty_flags/'+rid).set(false);
+                globalDirty[rid] = false; 
+                sendWebhook('cleaned', rid);
+            }
+            
+            // Just remove the flag, don't force status change unless passed
+            if(status) {
+                setStatus(status);
+            } else {
+                const d = safeGetRoom(currDate, rid);
+                
+                // Optimized Logic:
+                // 如果房間當前狀態是「續住(Green)」或「預訂(Yellow)」，只消除髒房狀態（紅框），保持原狀態。
+                if (d.s === 'green' || d.s === 'yellow') {
+                     closeModal();
+                     logAction(`完成清潔 ${rid}`);
+                     render();
+                     return;
+                }
+
+                // 若為「退房(Red)」或「空房(Blue)」：
+                // 自動根據有無備註需求，轉換為預訂(Yellow)或空房(Blue)。
+                const n = d.n || {};
+                // 檢查是否有任何備註需求
+                const hasBooking = (n.p || n.bed || n.q || n.late || n.flash || n.msg || n.bath || n.out);
+                setStatus(hasBooking ? 'yellow' : 'blue');
+            }
+        }
+        
+        function logAction(act) {
+            if(!isTraining && db) {
+                try {
+                     const now = new Date();
+                     const t = now.toTimeString().split(' ')[0];
+                     db.ref('logs/' + currDate).push({
+                        time: t,
+                        user: user.n,
+                        action: act
+                     });
+                } catch(e) {}
+            }
+        }
+
+        // --- 直接標記為髒房 (不觸發 Webhook) ---
+        function markAsDirty() {
+            if(!mRoomId) return;
+            if(confirm(`確定要直接將 ${mRoomId} 標記為髒房嗎？\n(此操作僅改變打掃狀態，不會發送 Line 通知)`)) {
+                if(!isTraining && db) {
+                    db.ref('global/dirty_flags/'+mRoomId).set(true);
+                }
+                globalDirty[mRoomId] = true;
+                logAction(`手動標記 ${mRoomId} 為髒房`);
+                render();
+                closeModal();
+            }
+        }
+
+        // --- 補充缺少的 UI 控制與日誌函數 ---
+        function mkStp(label, id, val, max) {
+            return `<div class="ctrl-row"><div>${label}</div><div class="stepper"><div class="s-btn" onclick="chgVal('${id}',-1,0,${max})">-</div><div class="s-val" id="val-${id}">${val}</div><div class="s-btn" onclick="chgVal('${id}',1,0,${max})">+</div></div></div>`;
+        }
+
+        function chgVal(id, d, min, max) {
+            let el = document.getElementById('val-'+id);
+            if(!el) return;
+            let v = parseInt(el.innerText) + d;
+            if(v >= min && v <= max) el.innerText = v;
+        }
+
+        function tog(el) {
+            el.classList.toggle('on');
+            let inp = el.nextElementSibling;
+            if(el.classList.contains('on')) { el.innerText='✅ 需要'; inp.value='1'; }
+            else { el.innerText='無'; inp.value=''; }
+        }
+
+        function togRed(el) {
+            el.classList.toggle('on-red');
+            let inp = el.nextElementSibling;
+            if(el.classList.contains('on-red')) { el.innerText='🌃 晚到'; inp.value='1'; }
+            else { el.innerText='正常'; inp.value=''; }
+        }
+
+        function togFlash(el) {
+            el.classList.toggle('on-orange');
+            let inp = el.nextElementSibling;
+            if(el.classList.contains('on-orange')) { el.innerText='⚡ 現場客'; inp.value='1'; }
+            else { el.innerText='一般'; inp.value=''; }
+        }
+
+        function togOut(el) {
+    el.classList.toggle('on');
+    let inp = el.nextElementSibling;
+    if(el.classList.contains('on')) { 
+        el.innerText='🏃 外出'; 
+        inp.value='1'; 
+        // 新增這行：觸發外出 Webhook 通知
+        sendWebhook('guest_out', mRoomId); 
+    }
+    else { 
+        el.innerText='在房'; 
+        inp.value=''; 
+    }
+    // 新增這行：自動儲存，確保系統狀態與通知完美同步！
+    saveNote(false);
+}
+
+        function openLogModal() {
+            document.getElementById('log-modal').style.display='flex';
+            renderFullLogs();
+        }
+
+        function renderFullLogs() {
+            const list = document.getElementById('log-full-list');
+            if(!list) return;
+            if(fullLogs.length === 0) {
+                list.innerHTML = '<div style="padding:20px;text-align:center;">今日目前無紀錄</div>';
+                return;
+            }
+            list.innerHTML = fullLogs.map(l => `<div class="log-row"><div><span class="log-time">${l.time}</span> <b>${l.user}</b></div><div>${l.action}</div></div>`).join('');
+        }
+
+    </script>
+</body>
+</html>
