@@ -1302,7 +1302,7 @@
             trainingCache : cache;
             const d = target[currDate][rid];
             if(diff.s) d.s = diff.s; if(diff.n) d.n = diff.n;
-            if(diff.s === 'red' && d.n.late) diff.n.late = true;
+            if(diff.s === 'red' && d.n && d.n.late && diff.n) diff.n.late = true;
             
             if(!isTraining && db) {
                 db.ref('status/'+currDate+'/'+rid).update(diff);
@@ -1324,9 +1324,9 @@
         function finishCleaning(rid, status) {
             if (!isTraining && db) {
                 db.ref('global/dirty_flags/'+rid).set(false);
-                globalDirty[rid] = false; 
                 sendWebhook('cleaned', rid);
             }
+            globalDirty[rid] = false; 
             
             // Just remove the flag, don't force status change unless passed
             if(status) {
