@@ -1480,12 +1480,23 @@
                      const now = new Date();
                      const t = now.toTimeString().split(' ')[0];
                      
-                     let finalAct = act;
                      const targetDate = logDate || currDate;
                      const realToday = getTwDate();
-                     // 如果目標日期不是「真實的今天」，就加上日期標籤
-                     if (targetDate !== realToday) {
-                         const md = targetDate.substring(5).replace('-', '/'); 
+                     const md = targetDate.substring(5).replace('-', '/'); 
+                     
+                     let finalAct = act;
+                     
+                     // 統一修正錯字並將日期插入至房號前方，符合「變更 (日期) (房號) 狀態為 (狀態)」格式
+                     if (act.includes('更變 ') || act.includes('變更 ')) {
+                         finalAct = act.replace(/(更變|變更)\s+(\d+)/, `變更 ${md} $2`);
+                     } else if (act.includes('更新 ')) {
+                         finalAct = act.replace(/更新\s+(\d+)/, `更新 ${md} $1`);
+                     } else if (act.includes('完成清潔 ')) {
+                         finalAct = act.replace(/完成清潔\s+(\d+)/, `完成清潔 ${md} $1`);
+                     } else if (act.includes('手動標記 ')) {
+                         finalAct = act.replace(/手動標記\s+(\d+)/, `手動標記 ${md} $1`);
+                     } else {
+                         // 對於其他特殊操作 (如一鍵鎖房)，保留中括號格式
                          finalAct = `[${md}] ` + act;
                      }
                      
