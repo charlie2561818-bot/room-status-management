@@ -448,7 +448,24 @@
                     loadData(currDate);
                     db.ref('settings/aya_pin').on('value', s => { if(s.val()){ayaPin=s.val(); localStorage.setItem('aya_pin', ayaPin);}});
                     
-                    
+                    const todayStr = getTwDate();
+                    logRef = db.ref('logs/'+todayStr);
+                    logRef.on('value', s => {
+                        fullLogs = [];
+                        if (s.exists()) {
+                            s.forEach(c => { fullLogs.unshift(c.val()); }); 
+                        }
+                        
+                        const miniLogs = fullLogs.slice(0, 5);
+                        const logBox = document.getElementById('sys-logs');
+                        if(logBox) {
+                            logBox.innerHTML = miniLogs.length > 0 
+                                ? miniLogs.map(l => `<div class="log-item"><div><span class="log-time">${l.time}</span> <b>${l.user}</b></div><div>${l.action}</div></div>`).join('')
+                                : '<div style="padding:10px;text-align:center">今日無紀錄</div>';
+                        }
+                            
+                        if(document.getElementById('log-modal').style.display === 'flex') renderFullLogs();
+                    });
                     db.ref('global/dirty_flags').on('value', s => {
                         globalDirty = s.val() || {};
                         if(!matrixSyncMode && !daySyncMode) {
@@ -537,25 +554,6 @@
                 cache[date] = s.val() || {};
                 ensureData(date);
                 if(date === currDate) render();
-            });
-
-            if(logRef) logRef.off();
-            logRef = db.ref('logs/'+date);
-            logRef.on('value', s => {
-                fullLogs = [];
-                if (s.exists()) {
-                    s.forEach(c => { fullLogs.unshift(c.val()); }); 
-                }
-                
-                const miniLogs = fullLogs.slice(0, 5);
-                const logBox = document.getElementById('sys-logs');
-                if(logBox) {
-                    logBox.innerHTML = miniLogs.length > 0 
-                        ? miniLogs.map(l => `<div class="log-item"><div><span class="log-time">${l.time}</span> <b>${l.user}</b></div><div>${l.action}</div></div>`).join('')
-                        : '<div style="padding:10px;text-align:center">今日無紀錄</div>';
-                }
-                    
-                if(document.getElementById('log-modal').style.display === 'flex') renderFullLogs();
             });
         }
         function ensureData(date) {
@@ -1483,14 +1481,16 @@
                      const t = now.toTimeString().split(' ')[0];
                      
                      let finalAct = act;
-                     // 如果有傳入特定日期，且不是當下畫面停留的日期，就加上日期標籤
-                     if (logDate && logDate !== currDate) {
-                         const md = logDate.substring(5).replace('-', '/'); 
+                     const targetDate = logDate || currDate;
+                     const realToday = getTwDate();
+                     // 如果目標日期不是「真實的今天」，就加上日期標籤
+                     if (targetDate !== realToday) {
+                         const md = targetDate.substring(5).replace('-', '/'); 
                          finalAct = `[${md}] ` + act;
                      }
                      
-                     // 永遠寫入「當下畫面停留的日期(currDate)」，確保 Log 即時顯示
-                     db.ref('logs/' + currDate).push({
+                     // 永遠寫入「真實的今天(realToday)」，確保 Log 全域即時顯示
+                     db.ref('logs/' + realToday).push({
                         time: t,
                         user: user.n,
                         action: finalAct
