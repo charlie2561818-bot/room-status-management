@@ -536,8 +536,8 @@
             if (raw.n.extraBed) { raw.n.bed = raw.n.extraBed; delete raw.n.extraBed; }
             if (raw.status) { raw.s = raw.status; delete raw.status; }
             
-            // --- Staff Cloaking for Locked Rooms ---
-            if (user && user.r === 'staff' && raw.s === 'locked') {
+            // --- Staff and Mom Cloaking for Locked Rooms ---
+            if (user && (user.r === 'staff' || user.n === '👵🏻 媽媽') && raw.s === 'locked') {
                 return { s: 'blue', n: raw.n }; 
             }
             // ---------------------------------------
