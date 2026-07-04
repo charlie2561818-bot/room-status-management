@@ -588,6 +588,8 @@
                 if(!isTraining) document.getElementById('wv-nav-ctrls').style.display='none'; 
                 document.getElementById('wv-legend').classList.remove('hidden');
                 document.getElementById('wv-aya-alert').classList.remove('hidden'); 
+                document.querySelectorAll('input[type="date"]').forEach(el => el.style.display = 'none');
+                
                 
                 // --- 更新：改為 8 天總覽字眼 ---
                 document.getElementById('week-btn-txt').innerText = 'Jadwal 8-Hari';
@@ -600,6 +602,7 @@
                 }
             } else {
                 document.getElementById('day-toolbar').style.display='flex'; 
+                document.querySelectorAll('input[type="date"]').forEach(el => el.style.display = 'block');
             }
             
             if(isTraining) {
