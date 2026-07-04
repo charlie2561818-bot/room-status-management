@@ -901,7 +901,7 @@
                 let thClass = (dayIdx === 0 || dayIdx === 6) ? 'th-weekend' : '';
    
                 if(d === today) thClass += ' today-col'; 
-                html += `<th class="${thClass}" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''}">${lbl}</th>`;
+                html += `<th class="${thClass}" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''}${user.r!=='staff'?'cursor:pointer;':''}" onclick="if(user.r !== 'staff') lockAllEmptyRooms('${d}')" title="一鍵全鎖房">${lbl}</th>`;
             });
             html += '</tr></thead><tbody>';
 
@@ -1069,11 +1069,42 @@
             updateCellUI(d, rid);
         }
 
+        function lockAllEmptyRooms(d) {
+            if(user.r === 'staff') return;
+            if(!confirm(`確定要將 ${d} 所有的「空房」一鍵設為「鎖房」嗎？\n(既有訂單將不受影響)`)) return;
+            
+            const target = isTraining ? trainingCache : cache;
+            if (!target[d]) target[d] = {};
+            
+            let updated = false;
+            ROOMS.forEach(r => {
+                const cur = safeGetRoom(d, r.id).s;
+                if (cur === 'blue') {
+                    if (!target[d][r.id]) target[d][r.id] = {s:'blue', n:{}};
+                    target[d][r.id].s = 'locked';
+                    updated = true;
+                    
+                    if (!isTraining && db) {
+                        db.ref('status/'+d+'/'+r.id).update(target[d][r.id]);
+                    }
+                    updateCellUI(d, r.id);
+                }
+            });
+            
+            if (updated && !isTraining && db) {
+                if (user.r === 'admin' && d === getTwDate()) { 
+                     db.ref('global/last_update').set(Date.now());
+                }
+            }
+            if (d === currDate) {
+                render();
+            }
+        }
+
         function updateCellUI(d, rid) {
             const cell = document.getElementById(`td-${d}-${rid}`);
             if(!cell) return;
-            const target = isTraining ? trainingCache : cache;
-            const cd = target[d][rid];
+            const cd = safeGetRoom(d, rid);
             const cls = 'c-'+cd.s;
             const isId = user.l === 'id';
             const r = ROOMS.find(x=>x.id===rid);
