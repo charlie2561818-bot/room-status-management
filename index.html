@@ -907,7 +907,7 @@
 
             const target = isTraining ? trainingCache : cache;
             ROOMS.forEach(r => {
-                html += `<tr><td class="wv-room-col">${r.id}</td>`;
+                html += `<tr><td class="wv-room-col" style="${user.r!=='staff'?'cursor:pointer;':''}" onclick="if(user.r !== 'staff') lockAllEmptyRoomDays('${r.id}')" title="依房號一鍵鎖房">${r.id}</td>`;
                 dates.forEach(d => {
                     const cd = safeGetRoom(d, r.id);
                     const cls = 'c-'+cd.s; 
@@ -1116,6 +1116,65 @@
                 }
             }
             if (d === currDate) {
+                render();
+            }
+        }
+
+        function lockAllEmptyRoomDays(rid) {
+            if(user.r === 'staff') return;
+            
+            const dates = [];
+            for(let i=0; i<30; i++) { 
+                 let dt = new Date(weekStartDate + "T12:00:00");
+                dt.setDate(dt.getDate()+i);
+                const offset = dt.getTimezoneOffset() * 60000;
+                dates.push((new Date(dt - offset)).toISOString().split('T')[0]);
+            }
+
+            const target = isTraining ? trainingCache : cache;
+            let hasBlue = false;
+            let hasLocked = false;
+            dates.forEach(d => {
+                const cur = safeGetRoom(d, rid).s;
+                if (cur === 'blue') hasBlue = true;
+                if (cur === 'locked') hasLocked = true;
+            });
+
+            if (!hasBlue && !hasLocked) return;
+
+            const isLocking = hasBlue;
+            const rInfo = ROOMS.find(r => r.id === rid);
+            const msg = isLocking 
+                ? `確定要將 ${rid} (${rInfo.t}) 在畫面上未來 30 天的所有「空房」一鍵設為「鎖房」嗎？\n(既有訂單將不受影響)`
+                : `確定要將 ${rid} (${rInfo.t}) 在畫面上未來 30 天的「鎖房」一鍵【解除鎖定】恢復為空房嗎？`;
+
+            if(!confirm(msg)) return;
+            
+            let updated = false;
+            dates.forEach(d => {
+                const cur = safeGetRoom(d, rid).s;
+                if (!target[d]) target[d] = {};
+                if (isLocking && cur === 'blue') {
+                    if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
+                    target[d][rid].s = 'locked';
+                    updated = true;
+                    if (!isTraining && db) db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                    updateCellUI(d, rid);
+                } else if (!isLocking && cur === 'locked') {
+                    if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
+                    target[d][rid].s = 'blue';
+                    updated = true;
+                    if (!isTraining && db) db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                    updateCellUI(d, rid);
+                }
+            });
+            
+            if (updated && !isTraining && db) {
+                 if (user.r === 'admin' && dates.includes(getTwDate())) {
+                     db.ref('global/last_update').set(Date.now());
+                 }
+            }
+            if (dates.includes(currDate)) {
                 render();
             }
         }
