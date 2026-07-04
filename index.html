@@ -1070,6 +1070,7 @@
                      db.ref('global/last_update').set(Date.now());
                  } 
                  db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                 logAction(`變更 ${rid} 狀態為 ${ST[next].cn}`, d);
             }
 
             updateCellUI(d, rid);
@@ -1120,6 +1121,7 @@
                 if (user.r === 'admin' && d === getTwDate()) { 
                      db.ref('global/last_update').set(Date.now());
                 }
+                logAction(isLocking ? `一鍵鎖房 (所有空房)` : `一鍵解鎖 (所有鎖房)`, d);
             }
             if (d === currDate) {
                 render();
@@ -1164,13 +1166,19 @@
                     if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
                     target[d][rid].s = 'locked';
                     updated = true;
-                    if (!isTraining && db) db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                    if (!isTraining && db) {
+                        db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                        logAction(`變更 ${rid} 狀態為 鎖房`, d);
+                    }
                     updateCellUI(d, rid);
                 } else if (!isLocking && cur === 'locked') {
                     if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
                     target[d][rid].s = 'blue';
                     updated = true;
-                    if (!isTraining && db) db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                    if (!isTraining && db) {
+                        db.ref('status/'+d+'/'+rid).update(target[d][rid]);
+                        logAction(`變更 ${rid} 狀態為 空房`, d);
+                    }
                     updateCellUI(d, rid);
                 }
             });
@@ -1468,12 +1476,13 @@
             }
         }
         
-        function logAction(act) {
+        function logAction(act, logDate) {
+            if(!logDate) logDate = currDate;
             if(!isTraining && db) {
                 try {
                      const now = new Date();
                      const t = now.toTimeString().split(' ')[0];
-                     db.ref('logs/' + currDate).push({
+                     db.ref('logs/' + logDate).push({
                         time: t,
                         user: user.n,
                         action: act
