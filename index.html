@@ -1477,15 +1477,23 @@
         }
         
         function logAction(act, logDate) {
-            if(!logDate) logDate = currDate;
             if(!isTraining && db) {
                 try {
                      const now = new Date();
                      const t = now.toTimeString().split(' ')[0];
-                     db.ref('logs/' + logDate).push({
+                     
+                     let finalAct = act;
+                     // 如果有傳入特定日期，且不是當下畫面停留的日期，就加上日期標籤
+                     if (logDate && logDate !== currDate) {
+                         const md = logDate.substring(5).replace('-', '/'); 
+                         finalAct = `[${md}] ` + act;
+                     }
+                     
+                     // 永遠寫入「當下畫面停留的日期(currDate)」，確保 Log 即時顯示
+                     db.ref('logs/' + currDate).push({
                         time: t,
                         user: user.n,
-                        action: act
+                        action: finalAct
                      });
                 } catch(e) {}
             }
