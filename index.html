@@ -30,6 +30,7 @@
             user-select: none; -webkit-user-select: none;
             -webkit-touch-callout: none;
             touch-action: manipulation; 
+            overscroll-behavior-y: none;
         }
         
         button { cursor: pointer; border: none; outline: none; font-family: inherit; }
@@ -161,8 +162,8 @@
         .dirty-active-bg { }
 
         /* Modal */
-        .modal-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; justify-content: center; align-items: flex-end; }
-        .modal-box { background: white; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s; }
+        .modal-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; justify-content: center; align-items: flex-end; overscroll-behavior-y: none; }
+        .modal-box { background: white; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; box-sizing: border-box; overscroll-behavior-y: contain; }
         @keyframes slideUp { from {transform:translateY(100%)} to {transform:translateY(0)} }
         .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .m-title { font-size: 28px; font-weight: 900; color: var(--theme-color); }
@@ -1256,15 +1257,6 @@
             
             updateRoom(toRid, newData);
             updateRoom(fromRid, {s:'blue', n:{}});
-            
-            if(globalDirty[fromRid]) {
-                if(!isTraining && db) {
-                    db.ref('global/dirty_flags/'+toRid).set(true);
-                    db.ref('global/dirty_flags/'+fromRid).set(false);
-                }
-                globalDirty[toRid] = true;
-                globalDirty[fromRid] = false;
-            }
 
             if(document.getElementById('week-view-layer').style.display === 'flex') {
                 updateCellUI(currDate, fromRid);
