@@ -18,6 +18,7 @@
             --st-red-bg: #FFEBEE; --st-red-tx: #B71C1C; --st-red-bd: #D32F2F;
             --st-pp-bg: #F3E5F5; --st-pp-tx: #4A148C; --st-pp-bd: #9C27B0;
             --st-yl-bg: #FFFDE7; --st-yl-tx: #F57F17; --st-yl-bd: #FBC02D;
+            --st-locked-bg: #E0E0E0; --st-locked-tx: #616161; --st-locked-bd: #9E9E9E;
         }
         body.training-mode { --theme-color: #E65100; --theme-light: #FF9800; --bg-cream: #FFF3E0; }
         
@@ -93,6 +94,7 @@
         .st-red { border-left-color: var(--st-red-bd); background: var(--st-red-bg); }
         .st-purple { border-left-color: var(--st-pp-bd); background: var(--st-pp-bg); }
         .st-yellow { border-left-color: var(--st-yl-bd); background: var(--st-yl-bg); }
+        .st-locked { border-left-color: var(--st-locked-bd); background: var(--st-locked-bg); }
         
         .r-head { display: flex; justify-content: space-between; }
         .r-no { font-size: 22px; font-weight: 900; }
@@ -147,6 +149,7 @@
         .c-green { background: var(--st-green-bg); color: var(--st-green-tx); }
         .c-red { background: var(--st-red-bg); color: var(--st-red-tx); }
         .c-purple { background: var(--st-pp-bg); color: var(--st-pp-tx); }
+        .c-locked { background: var(--st-locked-bg); color: var(--st-locked-tx); }
         .cell-tag { background: white; padding: 0 2px; border-radius: 2px; margin-top: 2px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); font-size: 9px; line-height: 10px; white-space: nowrap; font-weight: bold; pointer-events: none; color: #E65100;}
         .cell-moon { position: absolute; top: 1px; right: 1px; font-size: 10px; pointer-events: none; }
         .cell-flash { position: absolute; bottom: 1px; right: 1px; font-size: 10px; color: #FF5722; font-weight: bold; pointer-events: none; }
@@ -371,7 +374,8 @@
             yellow:{c:'yellow',cn:'預訂', id:'BOOKED', icon:'💡', cls:'st-yellow'},
             green: {c:'green', cn:'入住', id:'ADA TAMU', icon:'🎒', cls:'st-green'},
             red:   {c:'red',   cn:'退房', id:'KOTOR', icon:'🧹', cls:'st-red'},
-            purple:{c:'purple',cn:'勿擾', id:'DND', icon:'⛔', cls:'st-purple'}
+            purple:{c:'purple',cn:'勿擾', id:'DND', icon:'⛔', cls:'st-purple'},
+            locked:{c:'locked',cn:'鎖房', id:'KOSONG', icon:'🔒', cls:'st-locked'}
         };
 
         const INDO_DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -530,6 +534,12 @@
             if (raw.n.peopleCount) { raw.n.p = raw.n.peopleCount; delete raw.n.peopleCount; }
             if (raw.n.extraBed) { raw.n.bed = raw.n.extraBed; delete raw.n.extraBed; }
             if (raw.status) { raw.s = raw.status; delete raw.status; }
+            
+            // --- Staff Cloaking for Locked Rooms ---
+            if (user && user.r === 'staff' && raw.s === 'locked') {
+                return { s: 'blue', n: raw.n }; 
+            }
+            // ---------------------------------------
             return raw;
         }
 
@@ -906,7 +916,7 @@
                     let code = '';
                     if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
                     else { if(cd.s==='yellow')code='入';
-                    else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; }
+                    else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
           
                     let icons = '';
@@ -1072,7 +1082,7 @@
             let code = '';
             if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
             else { if(cd.s==='yellow')code='入';
-            else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; }
+            else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
             let icons = '';
             if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isId?'K':'床'}</span> `;
@@ -1219,7 +1229,7 @@
                 </div>`;
             }
 
-            const acts = [{c:'green',l:'入住'},{c:'red',l:'退房'},{c:'blue',l:'空房'},{c:'yellow',l:'預訂'},{c:'purple',l:'勿擾'}];
+            const acts = [{c:'green',l:'入住'},{c:'red',l:'退房'},{c:'blue',l:'空房'},{c:'yellow',l:'預訂'},{c:'purple',l:'勿擾'},{c:'locked',l:'鎖房'}];
             let btns = acts.map(x => `<div class="act-btn" onclick="setStatus('${x.c}')" style="border:2px solid ${x.c===d.s?'#333':'transparent'}"><div style="font-size:24px">${ST[x.c].icon}</div><div>${x.l}</div></div>`).join('');
             
             body.innerHTML = `${cleanBtn}<div class="act-grid">${btns}</div>`;
