@@ -1039,7 +1039,7 @@
         }
 
         function matrixCycle(d, rid) {
-            const cyc = ['blue','yellow','green','red'];
+            const cyc = ['blue','yellow','green','red','locked'];
             const target = isTraining ? trainingCache : cache;
             const cur = safeGetRoom(d, rid).s;
             let idx = cyc.indexOf(cur); if(idx===-1) idx=0;
