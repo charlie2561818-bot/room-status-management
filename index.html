@@ -519,12 +519,16 @@
             if (raw.n.extraBed) { raw.n.bed = raw.n.extraBed; delete raw.n.extraBed; }
             if (raw.status) { raw.s = raw.status; delete raw.status; }
             
-            // --- Staff and Mom Cloaking for Locked Rooms ---
-            if (user && (user.r === 'staff' || user.n === '👵🏻 媽媽') && raw.s === 'locked') {
+            let s_val = raw.s;
+            if (s_val === 'yellow' && raw.n && raw.n.isLocked) {
+                s_val = 'locked';
+            }
+            
+            if (user && (user.r === 'staff' || user.n === '👵🏻 媽媽') && (s_val === 'locked' || raw.s === 'locked')) {
                 return { s: 'blue', n: raw.n }; 
             }
-            // ---------------------------------------
-            return raw;
+            
+            return { s: s_val || 'blue', n: raw.n };
         }
 
         function loadData(date) {
@@ -541,7 +545,6 @@
 
             if(logRef) logRef.off();
             
-            // 智慧雙模式：如果日期是過去，就看當天的歷史紀錄；如果是今天或未來，就看真實世界的今天流水帳
             let listenDate;
             if (date < getTwDate()) {
                 listenDate = date; 
@@ -601,8 +604,6 @@
                 document.getElementById('wv-aya-alert').classList.remove('hidden'); 
                 document.querySelectorAll('input[type="date"]').forEach(el => el.style.display = 'none');
                 
-                
-                // --- 更新：改為 8 天總覽字眼 ---
                 document.getElementById('week-btn-txt').innerText = 'Jadwal 8-Hari';
                 document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
                 
@@ -632,7 +633,6 @@
             let initial = true;
             globalUpdateListener.on('value', snap => {
                 if(initial) { initial=false; return; } 
-                // Removed time check to fix invalid popup issue
                 if(snap.val()) {
                      db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
                 }
@@ -683,13 +683,11 @@
             const newPin = prompt("新 PIN 碼 (4位數)", ayaPin);
             if(newPin && newPin.length===4) {
                 ayaPin = newPin; localStorage.setItem('aya_pin', ayaPin);
-                // document.getElementById('pin-display').innerText = ayaPin;
                 if(db) db.ref('settings/aya_pin').set(ayaPin);
             }
         }
         function previewAya() { if(confirm('切換阿雅視角？')) login('aya'); }
 
-        // 修改此函數，允許阿雅查看前一天(diff < -1才阻擋)
         function changeDate(d) {
             let dt = new Date(currDate + "T12:00:00");
             dt.setDate(dt.getDate()+d);
@@ -702,7 +700,6 @@
                 const d2 = new Date(today);
                 const diff = Math.round((d1-d2)/(86400000));
                 
-                // 放寬限制：允許 diff 為 -1 (昨天)
                 if(diff < -1 || diff > 7) { 
                     alert('Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)'); 
                     return; 
@@ -766,11 +763,9 @@
                 
                 let statusTextContent = isId ? st.id : st.cn;
 
-                // Dirty visual overrides
                 if (isDirty) {
                     card.style.border = "4px solid #D32F2F"; 
                     statusTextContent = isId ? 'KOTOR' : '已退房';
-                    // No background override
                 }
 
                 if(d.s==='red' && n.late) card.style.opacity='0.7';
@@ -786,17 +781,13 @@
                 if(n.msg) tags+=`<span class="tag" style="color:purple">💬 Note</span>`;
 
                 let moon = (d.s==='red'&&n.late)?'<div class="moon-icon">🌃</div>':'';
-                // Append Guest Out icon for both Admin and Aya if Green (Occupied)
                 if (d.s === 'green' && n.out) {
                     statusTextContent += ' 🏃';
                 }
 
                 card.innerHTML = `${moon}<div class="r-head"><div><div class="r-no">${r.id}</div><div class="r-type">${isId?'Kamar':''} ${r.t}</div></div><div style="text-align:right"><div class="st-icon">${st.icon}</div><div class="st-txt">${statusTextContent}</div></div></div><div class="tags">${tags}</div>`;
                 
-                const evts = `onclick="handleGridClick('${currDate}','${r.id}', event)" oncontextmenu="handleGridRightClick('${currDate}','${r.id}', event)" onmousedown="handleGridPressStart('${currDate}','${r.id}', event)" onmouseup="handleGridPressEnd('${currDate}','${r.id}')" ontouchstart="handleGridPressStart('${currDate}','${r.id}')" ontouchend="handleGridPressEnd('${currDate}','${r.id}')"`;
-                
                 if (user.r !== 'staff') {
-                    // Update attributes with new handlers
                     card.setAttribute('oncontextmenu', 'return false;');
                     card.setAttribute('ontouchstart', `handleGridPressStart('${currDate}','${r.id}', event)`);
                     card.setAttribute('onmousedown', `handleGridPressStart('${currDate}','${r.id}', event)`);
@@ -812,10 +803,8 @@
             });
         }
 
-        // Matrix - 30 Days View
         function openWeekView() { 
             if(user.r === 'staff') {
-                // --- 更新：阿雅模式開啟週覽時，起始日期直接退回一天(昨天) ---
                 let dt = new Date(getTwDate() + "T12:00:00");
                 dt.setDate(dt.getDate() - 1);
                 const offset = dt.getTimezoneOffset() * 60000;
@@ -854,12 +843,10 @@
             const tbl = document.getElementById('wv-table');
             tbl.innerHTML = '<tr><td>Loading...</td></tr>';
             
-            // Generate Year Month Title
             const startObj = new Date(weekStartDate);
             const yyyy = startObj.getFullYear();
             const mm = startObj.getMonth() + 1;
             
-            // --- 更新：如果是員工，標題顯示 8 天總覽 ---
             if(user.r === 'staff') {
                 document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
             } else {
@@ -867,7 +854,6 @@
             }
 
             const dates = [];
-            // --- 更新：阿雅模式改為顯示 8 天 (昨天+今天+未來6天) ---
             const daysToShow = user.r === 'staff' ? 8 : 30;
             for(let i=0; i<daysToShow; i++) { 
                  let dt = new Date(weekStartDate + "T12:00:00");
@@ -889,7 +875,6 @@
             let html = '';
             const today = getTwDate(); 
 
-            // Month Row - Inject YYYY/MM into first cell
             const startObj = new Date(weekStartDate);
             const ym = `${startObj.getFullYear()}/${startObj.getMonth()+1}`;
             html += `<thead><tr class="month-row"><th class="wv-room-col">${ym}</th>`;
@@ -907,7 +892,6 @@
             });
             html += '</tr>';
 
-            // Date Row
             html += '<tr><th class="wv-room-col"></th>';
             dates.forEach(d => {
                 const dayIdx = new Date(d + "T12:00:00").getDay();
@@ -929,7 +913,7 @@
              
                     const isId = user.l === 'id';
                     let code = '';
-                    if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
+                    if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; else if(cd.s==='locked')code='LCK'; } 
                     else { if(cd.s==='yellow')code='入';
                     else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
@@ -943,18 +927,13 @@
                     if(cd.n.msg) icons += `💬 `;
                     let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
                     let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
-                    // Logic: If Dirty, show visual
                     let isDirty = (globalDirty[r.id] && !isTraining);
             
                     let dirtyMark = '';
-                    if (isDirty) { // 修正: 不論改成什麼顏色，只要是髒房，週覽表的掃把就會一直顯示
+                    if (isDirty) { 
                         dirtyMark = '<span style="position:absolute;bottom:2px;left:2px;font-size:10px;color:red;">🧹</span>';
                     }
 
-                    let bottomRow = icons ?
-                    `<div class="cell-icons">${icons}</div>` : '';
-                    
-                    // Add icon to LJT/Continue in Matrix if Guest Out (All users)
                     if (cd.s === 'green' && cd.n.out) {
                         code += ' 🏃';
                     }
@@ -978,7 +957,6 @@
             tbl.innerHTML = html;
         }
 
-        // v10.9 Advanced Interaction with Smart Scroll Detection
         let pressTimer;
         let isLongPress = false;
         let startX = 0;
@@ -1030,7 +1008,6 @@
         
         function handleGridClick(d, rid, e) { 
             if(isLongPress) return;
-            // Check both modes
             if(matrixSyncMode || (daySyncMode && d === currDate)) {
                 matrixCycle(d, rid);
             } else {
@@ -1058,23 +1035,28 @@
             const target = isTraining ? trainingCache : cache;
             const cur = safeGetRoom(d, rid).s;
             let idx = cyc.indexOf(cur); if(idx===-1) idx=0;
-            let next = cyc[(idx+1)%4];
+            let next = cyc[(idx+1)%5];
             
             if (!target[d]) target[d] = {};
             if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
-            // Check-in Guard in Matrix
+            
             if (globalDirty[rid] && next === 'green' && !isTraining) {
                 if(!confirm("⚠️ 警告：此房間尚未打掃 (Dirty)！\n確定要標記為續住/入住嗎？")) return;
             }
 
-            target[d][rid].s = next;
+            if (next === 'locked') {
+                target[d][rid].s = 'yellow';
+                if (!target[d][rid].n) target[d][rid].n = {};
+                target[d][rid].n.isLocked = true;
+            } else {
+                target[d][rid].s = next;
+                if (!target[d][rid].n) target[d][rid].n = {};
+                target[d][rid].n.isLocked = null;
+            }
             if(next==='blue') target[d][rid].n = {};
+            
             if (!isTraining && db) { 
                  if (next === 'red') db.ref('global/dirty_flags/'+rid).set(true);
-                 // 移除自動清空髒房狀態的邏輯，保護髒房任務不會在誤觸時消失
-                 // if (next === 'blue') db.ref('global/dirty_flags/'+rid).set(false);
-                 
-                 // Only trigger alert if modifying TODAY's data
                  if (user.r === 'admin' && d === getTwDate()) { 
                      db.ref('global/last_update').set(Date.now());
                  } 
@@ -1113,13 +1095,15 @@
                 const cur = safeGetRoom(d, r.id).s;
                 if (isLocking && cur === 'blue') {
                     if (!target[d][r.id]) target[d][r.id] = {s:'blue', n:{}};
-                    target[d][r.id].s = 'locked';
+                    target[d][r.id].s = 'yellow';
+                    target[d][r.id].n.isLocked = true;
                     updated = true;
                     if (!isTraining && db) db.ref('status/'+d+'/'+r.id).update(target[d][r.id]);
                     updateCellUI(d, r.id);
                 } else if (!isLocking && cur === 'locked') {
                     if (!target[d][r.id]) target[d][r.id] = {s:'blue', n:{}};
                     target[d][r.id].s = 'blue';
+                    target[d][r.id].n.isLocked = null;
                     updated = true;
                     if (!isTraining && db) db.ref('status/'+d+'/'+r.id).update(target[d][r.id]);
                     updateCellUI(d, r.id);
@@ -1173,7 +1157,8 @@
                 if (!target[d]) target[d] = {};
                 if (isLocking && cur === 'blue') {
                     if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
-                    target[d][rid].s = 'locked';
+                    target[d][rid].s = 'yellow';
+                    target[d][rid].n.isLocked = true;
                     updated = true;
                     if (!isTraining && db) {
                         db.ref('status/'+d+'/'+rid).update(target[d][rid]);
@@ -1183,6 +1168,7 @@
                 } else if (!isLocking && cur === 'locked') {
                     if (!target[d][rid]) target[d][rid] = {s:'blue', n:{}};
                     target[d][rid].s = 'blue';
+                    target[d][rid].n.isLocked = null;
                     updated = true;
                     if (!isTraining && db) {
                         db.ref('status/'+d+'/'+rid).update(target[d][rid]);
@@ -1212,7 +1198,7 @@
             const today = getTwDate(); 
 
             let code = '';
-            if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; } 
+            if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; else if(cd.s==='locked')code='LCK'; } 
             else { if(cd.s==='yellow')code='入';
             else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
@@ -1227,11 +1213,10 @@
             let isDirty = (globalDirty[rid] && !isTraining);
             
             let dirtyMark = '';
-            if (isDirty) { // 修正: 不論改成什麼顏色，只要是髒房，週覽表的掃把就會一直顯示
+            if (isDirty) { 
                 dirtyMark = '<span style="position:absolute;bottom:2px;left:2px;font-size:10px;color:red;">🧹</span>';
             }
 
-            // Append icon for Guest Out for All Users if Green (LJT)
             if (cd.s === 'green' && cd.n.out) {
                 code += ' 🏃';
             }
@@ -1248,11 +1233,9 @@
             cell.innerHTML = `<div class="cell-content ${finalCls}">${moon}${flash}${dirtyMark}${statusText}${bottomRow}</div>`;
         }
 
-        // v10.10: Silent Save (No Alert)
         function saveMatrixSync() {
             if(!isTraining && db) { 
                  for(let date in cache) db.ref('status/'+date).update(cache[date]);
-                 // Only update timestamp if TODAY is in the cache being saved
                  if (user.r === 'admin' && cache[getTwDate()]) db.ref('global/last_update').set(Date.now());
             }
             toggleMatrixSync();
@@ -1260,7 +1243,6 @@
         function jumpTo(date, rid) { currDate = date;
         loadData(currDate); updateDateUI(); closeWeekView(); render(); setTimeout(()=>openModal(rid),100); }
 
-        // --- Move Room Logic (Optimized v10.6) ---
         function startMoveRoom() {
             if(user.r==='staff') return;
             if(moveMode) return;
@@ -1361,7 +1343,6 @@
             if(r.d) ctrls += mkStp('👩 人數', 'p', n.p||0, 8); else ctrls += mkStp('🛏️ 加床', 'bed', n.bed||0, r.m);
             ctrls += mkStp('🌫️ 加被', 'q', n.q||0, 5);
             
-            // New Guest Out Toggle
             ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)">${n.out?'🏃 外出':'在房'}</div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
 
             ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)">${n.bath?'✅ 需要':'無'}</div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)">${n.late?'🌃 晚到':'正常'}</div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)">${n.flash?'⚡ 現場客':'一般'}</div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
@@ -1378,17 +1359,22 @@
         }
         
         function setStatus(s) { 
-             // v6.4 Check-in Guard
             if (s === 'green' && globalDirty[mRoomId]) {
                 if (!confirm("⚠️ 警告：此房間尚未打掃 (Dirty)！\n確定要讓客人入住嗎？")) return;
             }
             
-            updateRoom(mRoomId, {s:s});
+            let updateObj = {s: s, n: {isLocked: null}};
+            if (s === 'locked') {
+                updateObj.s = 'yellow';
+                updateObj.n.isLocked = true;
+            }
+            updateRoom(mRoomId, updateObj);
             closeModal(); 
             logAction(`更變 ${mRoomId} 狀態為 ${ST[s].cn}`); 
         }
         
         function saveNote(close = false) {
+            const d = safeGetRoom(currDate, mRoomId);
             const n = {
                 p: parseInt(document.getElementById('val-p')?.innerText||0),
                 bed: parseInt(document.getElementById('val-bed')?.innerText||0),
@@ -1397,14 +1383,14 @@
                 late: document.getElementById('v-late').value==='1',
                 flash: document.getElementById('v-flash').value==='1',
                 out: document.getElementById('v-out').value==='1',
-                msg: document.getElementById('v-msg').value
+                msg: document.getElementById('v-msg').value,
+                isLocked: d.n.isLocked
             };
             updateRoom(mRoomId, {n:n}); 
             if(close) closeModal(); 
             logAction(`更新 ${mRoomId} 備註`);
         }
 
-        // --- Make Webhook 串接觸發器 ---
         const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/ksddatrko6bxxuw6jzfsl6qqowwneu5u"; 
 
         async function sendWebhook(actionType, roomId, extraData = {}) {
@@ -1431,15 +1417,18 @@
         }
 
         function updateRoom(rid, diff) {
-            const target = isTraining ?
-            trainingCache : cache;
+            const target = isTraining ? trainingCache : cache;
+            if (!target[currDate][rid]) target[currDate][rid] = {s:'blue', n:{}};
             const d = target[currDate][rid];
-            if(diff.s) d.s = diff.s; if(diff.n) d.n = diff.n;
+            
+            if(diff.s) d.s = diff.s; 
+            if(diff.n) {
+                d.n = { ...d.n, ...diff.n };
+            }
             if(diff.s === 'red' && d.n && d.n.late && diff.n) diff.n.late = true;
             
             if(!isTraining && db) {
                 db.ref('status/'+currDate+'/'+rid).update(diff);
-                // v6.6: Only Admin triggers alert AND ONLY IF EDITING TODAY
                 if (user.r === 'admin' && currDate === getTwDate()) {
                     db.ref('global/last_update').set(Date.now());
                 }
