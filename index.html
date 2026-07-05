@@ -1634,7 +1634,9 @@
                 return;
             }
 
-            const listText = `🔔 Daftar Kebutuhan Khusus (今日特殊需求清單):\n` + requests.join('\n');
+            let dayIdx = new Date(currDate + "T12:00:00").getDay();
+            let indoDay = INDO_DAYS[dayIdx];
+            const listText = `🔔 Daftar Kebutuhan Khusus tgl ${currDate} ${indoDay} (特殊需求清單):\n` + requests.join('\n');
             
             if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
                 await sendWebhook('special_requests', 'ALL', { req_msg: listText });
