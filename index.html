@@ -260,7 +260,10 @@
             
             <div id="day-toolbar" class="day-toolbar" style="display:none;">
                 <div style="font-size:12px;font-weight:bold;color:#666;">工具列</div>
-                <button id="day-sync-btn" class="day-sync-btn" onclick="toggleDaySync()">🔁 日曆填色：關</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="day-sync-btn" style="background:#F44336; color:white;" onclick="broadcastAllCheckout()">📢 廣播：全退</button>
+                    <button id="day-sync-btn" class="day-sync-btn" onclick="toggleDaySync()">🔁 日曆填色：關</button>
+                </div>
             </div>
         </div>
 
@@ -1415,6 +1418,13 @@
                 console.log("Webhook 傳送成功:", payload);
             } catch (error) {
                 console.error("Webhook 傳送失敗:", error);
+            }
+        }
+
+        async function broadcastAllCheckout() {
+            if(confirm('確定要發送「今日客人已全數退房」通知嗎？')) {
+                await sendWebhook('all_checkout', 'ALL');
+                alert('已發送通知！');
             }
         }
 
