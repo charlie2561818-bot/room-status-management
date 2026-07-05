@@ -261,6 +261,7 @@
             <div id="day-toolbar" class="day-toolbar" style="display:none;">
                 <div style="font-size:12px;font-weight:bold;color:#666;">工具列</div>
                 <div style="display:flex; gap:8px;">
+                    <button class="day-sync-btn" style="background:#2196F3; color:white;" onclick="broadcastSpecialRequests()">📢 廣播：特殊需求</button>
                     <button class="day-sync-btn" style="background:#F44336; color:white;" onclick="broadcastAllCheckout()">📢 廣播：全退</button>
                     <button id="day-sync-btn" class="day-sync-btn" onclick="toggleDaySync()">🔁 日曆填色：關</button>
                 </div>
@@ -1600,6 +1601,44 @@
                 return;
             }
             list.innerHTML = fullLogs.map(l => `<div class="log-row"><div><span class="log-time">${l.time}</span> <b>${l.user}</b></div><div>${l.action}</div></div>`).join('');
+        }
+
+        async function broadcastSpecialRequests() {
+            const target = isTraining ? trainingCache : cache;
+            const dayData = target[currDate] || {};
+            let requests = [];
+
+            ROOMS.forEach(r => {
+                const rid = r.id;
+                if (!dayData[rid]) return;
+                const n = dayData[rid].n;
+                if (!n) return;
+
+                let roomReqs = [];
+                
+                if (n.p > 0) roomReqs.push(`Kasur +${n.p} (床)`);
+                if (n.bed > 0) roomReqs.push(`Extra Bed +${n.bed} (加床)`);
+                if (n.q > 0) roomReqs.push(`Selimut +${n.q} (加被)`);
+                if (n.bath) roomReqs.push(`Bak Bayi (嬰兒澡盆)`);
+                if (n.late) roomReqs.push(`Tamu Datang Terlambat (晚到)`);
+                if (n.msg && n.msg.trim() !== '') roomReqs.push(`Note: ${n.msg}`);
+                
+                if (roomReqs.length > 0) {
+                    requests.push(`• Kamar ${rid}：${roomReqs.join(', ')}`);
+                }
+            });
+
+            if (requests.length === 0) {
+                alert('今日目前沒有特殊需求的房間喔！');
+                return;
+            }
+
+            const listText = `🔔 Daftar Kebutuhan Khusus (今日特殊需求清單):\n` + requests.join('\n');
+            
+            if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
+                await sendWebhook('special_requests', 'ALL', { req_msg: listText });
+                alert('已發送通知！');
+            }
         }
 
     </script>
