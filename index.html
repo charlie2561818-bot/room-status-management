@@ -238,9 +238,10 @@
             </div>
             <div class="date-bar">
                 <button class="date-nav-btn" onclick="changeDate(-1)">&#10094;</button>
-                <div class="date-display" style="position:relative;">
+                <div class="date-display" style="position:relative; display:flex; align-items:center;">
                     <span class="icon" style="font-size:16px">event</span>
                     <span id="date-txt">...</span>
+                    <span class="icon" style="font-size:18px; margin-left:4px;">arrow_drop_down</span>
                     <span id="today-bdg" class="today-badge" onclick="event.stopPropagation(); goToday();" style="position:relative; z-index:2;">今天</span>
                     <input type="date" id="native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;" onchange="pickDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault();">
                 </div>
@@ -249,7 +250,6 @@
                     <span class="icon" style="font-size:14px">view_module</span>
                     <span id="week-btn-txt">週覽</span>
                 </div>
-                <input type="date" id="native-dp" style="position:absolute; visibility:hidden;" onchange="pickDate(this.value)">
             </div>
             <div class="floor-tabs" id="floor-area">
                 <div class="tab active" onclick="setFloor('all', this)">全部</div>
@@ -890,10 +890,10 @@
                 const mIdx = parseInt(d.split('-')[1]) - 1;
                 const monthName = user.l==='id' ? INDO_MONTHS[mIdx] : `${mIdx+1}月`;
                 if(monthName !== currentMonth) {
-                    html += `<th style="border-left:2px solid #999; text-align:left; padding-left:5px; color:#555; font-weight:900;">${monthName}</th>`;
+                    html += `<th style="border-left:2px solid #999; text-align:left; padding-left:5px; color:#555; font-weight:900; cursor:pointer;" onclick="if(user.r !== 'staff') broadcastSpecialRequestsForDay('${d}')" title="單日特殊需求廣播">${monthName}</th>`;
                     currentMonth = monthName;
                 } else {
-                    html += `<th></th>`;
+                    html += `<th style="cursor:pointer;" onclick="if(user.r !== 'staff') broadcastSpecialRequestsForDay('${d}')" title="單日特殊需求廣播"></th>`;
                 }
             });
             html += '</tr>';
@@ -1637,6 +1637,46 @@
             let dayIdx = new Date(currDate + "T12:00:00").getDay();
             let indoDay = INDO_DAYS[dayIdx];
             const listText = `🔔 Daftar Kebutuhan Khusus tgl ${currDate} ${indoDay} (特殊需求清單):\n` + requests.join('\n');
+            
+            if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
+                await sendWebhook('special_requests', 'ALL', { req_msg: listText });
+                alert('已發送通知！');
+            }
+        }
+
+        async function broadcastSpecialRequestsForDay(targetDate) {
+            const target = isTraining ? trainingCache : cache;
+            const dayData = target[targetDate] || {};
+            let requests = [];
+
+            ROOMS.forEach(r => {
+                const rid = r.id;
+                if (!dayData[rid]) return;
+                const n = dayData[rid].n;
+                if (!n) return;
+
+                let roomReqs = [];
+                
+                if (n.p > 0) roomReqs.push(`Kasur +${n.p} (床)`);
+                if (n.bed > 0) roomReqs.push(`Extra Bed +${n.bed} (加床)`);
+                if (n.q > 0) roomReqs.push(`Selimut +${n.q} (加被)`);
+                if (n.bath) roomReqs.push(`Bak Bayi (嬰兒澡盆)`);
+                if (n.late) roomReqs.push(`Tamu Datang Terlambat (晚到)`);
+                if (n.msg && n.msg.trim() !== '') roomReqs.push(`Note: ${n.msg}`);
+                
+                if (roomReqs.length > 0) {
+                    requests.push(`• Kamar ${rid}：${roomReqs.join(', ')}`);
+                }
+            });
+
+            if (requests.length === 0) {
+                alert('今日目前沒有特殊需求的房間喔！');
+                return;
+            }
+
+            let dayIdx = new Date(targetDate + "T12:00:00").getDay();
+            let indoDay = INDO_DAYS[dayIdx];
+            const listText = `🔔 Daftar Kebutuhan Khusus tgl ${targetDate} ${indoDay} (特殊需求清單):\n` + requests.join('\n');
             
             if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
                 await sendWebhook('special_requests', 'ALL', { req_msg: listText });
