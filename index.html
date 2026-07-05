@@ -306,6 +306,7 @@
         <div id="wv-tools" class="wv-toolbar">
             <div style="font-weight:bold; color:var(--theme-color);">填色同步 (入>續>退)</div>
             <div style="display:flex; gap:8px;">
+                <button class="wv-sync-btn" style="background:#2196F3; color:white;" onclick="broadcastSpecialRequests()">📢 廣播：特殊需求</button>
                 <button class="wv-sync-btn" style="background:#F44336; color:white;" onclick="broadcastAllCheckout()">📢 廣播：全退</button>
                 <button id="wv-sync-toggle" class="wv-sync-btn" onclick="toggleMatrixSync()">🔁 填色：關</button>
                 <button id="wv-save-btn" class="wv-sync-btn hidden" onclick="saveMatrixSync()" style="background:var(--theme-color); color:white;">💾 儲存</button>
