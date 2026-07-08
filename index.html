@@ -1268,7 +1268,17 @@
             const newData = JSON.parse(JSON.stringify(d)); 
             
             updateRoom(toRid, newData);
-            updateRoom(fromRid, {s:'blue', n:{}});
+            
+            // 修正：明確清空舊房間快取與資料庫中的備註狀態，避免被合併邏輯保留
+            const target = isTraining ? trainingCache : cache;
+            if (target[currDate] && target[currDate][fromRid]) {
+                target[currDate][fromRid].n = {};
+            }
+            if (!isTraining && typeof db !== 'undefined' && db) {
+                db.ref('status/' + currDate + '/' + fromRid + '/n').set(null);
+            }
+            
+            updateRoom(fromRid, {s:'blue'});
 
             if(document.getElementById('week-view-layer').style.display === 'flex') {
                 updateCellUI(currDate, fromRid);
