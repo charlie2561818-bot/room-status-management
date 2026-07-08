@@ -846,7 +846,27 @@
                 refreshWeekView();
             }
         }
-        
+        let twHolidaysCache = {};
+        async function fetchHolidays(year) {
+            if (twHolidaysCache[year]) return;
+            try {
+                const res = await fetch(`https://cdn.jsdelivr.net/gh/imsyuan/taiwan-holidays/data/${year}.json`);
+                if (!res.ok) throw new Error('API return ' + res.status);
+                const data = await res.json();
+                twHolidaysCache[year] = {};
+                data.forEach(d => {
+                    const y = d.date.substring(0,4);
+                    const m = d.date.substring(4,6);
+                    const day = d.date.substring(6,8);
+                    const dateStr = `${y}-${m}-${day}`;
+                    twHolidaysCache[year][dateStr] = d.isHoliday;
+                });
+            } catch (e) {
+                console.error('Failed to load holidays for', year, e);
+                twHolidaysCache[year] = {}; // prevent infinite retry
+            }
+        }
+
         async function refreshWeekView() {
             const tbl = document.getElementById('wv-table');
             tbl.innerHTML = '<tr><td>Loading...</td></tr>';
@@ -869,6 +889,10 @@
                 const offset = dt.getTimezoneOffset() * 60000;
                 dates.push((new Date(dt - offset)).toISOString().split('T')[0]);
             }
+
+            // 引入並使用 taiwan-holidays
+            const yearsNeeded = [...new Set(dates.map(d => d.substring(0, 4)))];
+            await Promise.all(yearsNeeded.map(y => fetchHolidays(y)));
 
             if(!isTraining && db) {
                 const promises = dates.map(d => db.ref('status/'+d).once('value'));
@@ -905,7 +929,14 @@
                 const dayIdx = new Date(d + "T12:00:00").getDay();
                 const dateNum = d.split('-')[2];
                 let lbl = user.l==='id' ? `${INDO_DAYS[dayIdx]} ${dateNum}` : `${dateNum} ${CN_DAYS[dayIdx]}`;
-                let thClass = (dayIdx === 0 || dayIdx === 6) ? 'th-weekend' : '';
+                
+                let isHoliday = (dayIdx === 0 || dayIdx === 6);
+                const yyyy = d.substring(0, 4);
+                if (twHolidaysCache[yyyy] && twHolidaysCache[yyyy].hasOwnProperty(d)) {
+                    isHoliday = twHolidaysCache[yyyy][d];
+                }
+                
+                let thClass = isHoliday ? 'th-weekend' : '';
    
                 if(d === today) thClass += ' today-col'; 
                 html += `<th class="${thClass}" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''}${user.r!=='staff'?'cursor:pointer;':''}" onclick="if(user.r !== 'staff') lockAllEmptyRooms('${d}')" title="一鍵全鎖房">${lbl}</th>`;
