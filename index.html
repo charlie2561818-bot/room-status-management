@@ -1061,7 +1061,12 @@
                 if (!target[d][rid].n) target[d][rid].n = {};
                 target[d][rid].n.isLocked = null;
             }
-            if(next==='blue') target[d][rid].n = {};
+            if(next==='blue') {
+                target[d][rid].n = {};
+                if (!isTraining && typeof db !== 'undefined' && db) {
+                    db.ref('status/'+d+'/'+rid+'/n').set(null);
+                }
+            }
             
             if (!isTraining && db) { 
                  if (next === 'red') db.ref('global/dirty_flags/'+rid).set(true);
@@ -1381,6 +1386,17 @@
                 if (!confirm("⚠️ 警告：此房間尚未打掃 (Dirty)！\n確定要讓客人入住嗎？")) return;
             }
             
+            // 修正：當狀態變更為「空房」時，明確清空該房間備註狀態
+            if (s === 'blue') {
+                const target = isTraining ? trainingCache : cache;
+                if (target[currDate] && target[currDate][mRoomId]) {
+                    target[currDate][mRoomId].n = {};
+                }
+                if (!isTraining && typeof db !== 'undefined' && db) {
+                    db.ref('status/' + currDate + '/' + mRoomId + '/n').set(null);
+                }
+            }
+
             let updateObj = {s: s, n: {isLocked: null}};
             if (s === 'locked') {
                 updateObj.s = 'yellow';
