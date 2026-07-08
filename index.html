@@ -784,7 +784,7 @@
                 if(n.q) tags+=`<span class="tag tag-high"><span class="icon" style="font-size:14px">layers</span> +${n.q} ${isId?'Selimut':'被'}</span>`;
                 if(n.out) tags+=`<span class="tag" style="background:#E0F7FA; color:#006064;">🏃 外出</span>`;
                 if(n.bath) tags+=`<span class="tag">🛁 Bak</span>`;
-                if(n.msg) tags+=`<span class="tag" style="color:purple">💬 Note</span>`;
+                if(n.msg && !(d.s === 'locked' && user.r === 'staff')) tags+=`<span class="tag" style="color:purple">💬 Note</span>`;
 
                 let moon = (d.s==='red'&&n.late)?'<div class="moon-icon">🌃</div>':'';
                 if (n.out) {
@@ -930,7 +930,7 @@
                     if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
         
                     if(cd.n.bath) icons += `🛁 `;
-                    if(cd.n.msg) icons += `💬 `;
+                    if(cd.n.msg && !(cd.s === 'locked' && user.r === 'staff')) icons += `💬 `;
                     let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
                     let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
                     let isDirty = (globalDirty[r.id] && !isTraining);
@@ -1220,7 +1220,7 @@
             if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
             if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
             if(cd.n.bath) icons += `🛁 `;
-            if(cd.n.msg) icons += `💬 `;
+            if(cd.n.msg && !(cd.s === 'locked' && user.r === 'staff')) icons += `💬 `;
             let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
             let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
             let isDirty = (globalDirty[rid] && !isTraining);
@@ -1335,7 +1335,7 @@
                 if(n.q) ins += `<span class="icon">layers</span> +${n.q} Selimut<br>`;
                 if(n.out) ins += `🏃 <b>Tamu sedang keluar.</b><br>`;
                 if(n.bath) ins += `🛁 Bak Bayi<br>`;
-                if(n.msg) ins += `💬 ${n.msg} <a href="https://translate.google.com/?sl=zh-TW&tl=id&text=${encodeURIComponent(n.msg)}&op=translate" target="_blank">🌐 Translate</a>`;
+                if(n.msg && d.s !== 'locked') ins += `💬 ${n.msg} <a href="https://translate.google.com/?sl=zh-TW&tl=id&text=${encodeURIComponent(n.msg)}&op=translate" target="_blank">🌐 Translate</a>`;
                 
                 if(d.s==='red' || globalDirty[rid]) {
                     body.innerHTML = `<div style="background:#FFF3E0; padding:15px; border-radius:10px; margin-bottom:15px; font-size:16px;">${ins||'Silahkan sapu.'}</div><button class="line-btn" style="background:#2196F3" onclick="finishCleaning('${rid}')">✅ SELESAI (完成)</button>`;
