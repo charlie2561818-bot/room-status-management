@@ -1682,6 +1682,7 @@
                 if (n.bath) roomReqs.push(`Bak Bayi (嬰兒澡盆)`);
                 if (n.late) roomReqs.push(`Tamu Datang Terlambat (晚到)`);
                 if (n.msg && n.msg.trim() !== '') roomReqs.push(`Note: ${n.msg}`);
+                if (dayData[rid].s === 'purple') roomReqs.push(`Jangan Ganggu (勿擾房)`);
                 
                 if (roomReqs.length > 0) {
                     requests.push(`• Kamar ${rid}：${roomReqs.join(', ')}`);
@@ -1722,6 +1723,7 @@
                 if (n.bath) roomReqs.push(`Bak Bayi (嬰兒澡盆)`);
                 if (n.late) roomReqs.push(`Tamu Datang Terlambat (晚到)`);
                 if (n.msg && n.msg.trim() !== '') roomReqs.push(`Note: ${n.msg}`);
+                if (dayData[rid].s === 'purple') roomReqs.push(`Jangan Ganggu (勿擾房)`);
                 
                 if (roomReqs.length > 0) {
                     requests.push(`• Kamar ${rid}：${roomReqs.join(', ')}`);
