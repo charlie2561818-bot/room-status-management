@@ -197,6 +197,15 @@
         .alert-title { color: white; font-size: 28px; font-weight: 900; margin-bottom: 20px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);}
         .alert-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 16px; }
         .alert-confirm-btn { margin-top: 30px; background: white; color: #D32F2F; width: 100%; padding: 15px; font-size: 20px; border-radius: 10px; font-weight: 900; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+
+        #custom-confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .custom-confirm-box { background: #fff; width: 100%; max-width: 420px; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .custom-confirm-title { background: #FF9800; color: #fff; padding: 16px 20px; font-size: 18px; font-weight: 900; text-align: center; }
+        .custom-confirm-body { padding: 20px; font-size: 15px; color: #333; line-height: 1.7; white-space: pre-wrap; max-height: 50vh; overflow-y: auto; }
+        .custom-confirm-actions { display: flex; border-top: 1px solid #eee; }
+        .custom-confirm-actions button { flex: 1; padding: 16px; font-size: 17px; font-weight: 700; border: none; cursor: pointer; }
+        .custom-confirm-cancel { background: #f5f5f5; color: #666; }
+        .custom-confirm-ok { background: #FF9800; color: #fff; }
     </style>
 </head>
 <body>
@@ -321,6 +330,17 @@
         <div class="alert-title">⚠️ PERHATIAN! (注意)</div>
         <div class="alert-box" id="alert-content"></div>
         <button class="alert-confirm-btn" onclick="closeAlert()">SAYA MENGERTI (我知道了)</button>
+    </div>
+
+    <div id="custom-confirm-overlay">
+        <div class="custom-confirm-box">
+            <div class="custom-confirm-title" id="cc-title">📢 確認發送</div>
+            <div class="custom-confirm-body" id="cc-body"></div>
+            <div class="custom-confirm-actions">
+                <button class="custom-confirm-cancel" onclick="closeCustomConfirm(false)">取消</button>
+                <button class="custom-confirm-ok" id="cc-ok-btn">確定發送</button>
+            </div>
+        </div>
     </div>
 
     <div id="modal" class="modal-mask" onclick="if(event.target===this) closeModal()">
@@ -1402,13 +1422,11 @@
             ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)">${n.out?'🏃 外出':'在房'}</div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
 
             ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)">${n.bath?'✅ 需要':'無'}</div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)">${n.late?'🌃 晚到':'正常'}</div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)">${n.flash?'⚡ 現場客':'一般'}</div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
-            placeholder="備註...">${n.msg||''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button><a href="#" id="line-lnk" target="_blank" class="line-btn">💬 Line 通知阿雅</a>`;
+            placeholder="備註...">${n.msg||''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button>`;
             body.innerHTML += `<div style="border-top:1px solid #eee;">${ctrls}</div>`;
-            const lineTxt = `Aya, Kamar ${mRoomId}. ${d.s==='red'?'KOTOR, sapu.':''} ${n.msg||''}`;
-            document.getElementById('line-lnk').href = `https://line.me/R/msg/text/?${encodeURIComponent(lineTxt)}`;
 
             if (user.r !== 'staff') {
-                body.innerHTML += `<button class="line-btn" style="background:#FF9800; color:#fff; margin-top:8px;" onclick="notifySingleRoomChange()">📢 通知阿雅此房異動</button>`;
+                body.innerHTML += `<button class="line-btn" style="background:#FF9800; color:#fff; margin-top:8px;" onclick="saveAndNotifyRoom()">📢 通知阿雅此房異動</button>`;
             }
         }
 
@@ -1749,6 +1767,31 @@
             }
         }
 
+        function saveAndNotifyRoom() {
+            saveNote(false);
+            notifySingleRoomChange();
+        }
+
+        let _ccResolve = null;
+        function showCustomConfirm(title, body) {
+            return new Promise(resolve => {
+                _ccResolve = resolve;
+                document.getElementById('cc-title').innerText = title;
+                document.getElementById('cc-body').innerText = body;
+                const overlay = document.getElementById('custom-confirm-overlay');
+                overlay.style.display = 'flex';
+                const okBtn = document.getElementById('cc-ok-btn');
+                okBtn.onclick = () => closeCustomConfirm(true);
+            });
+        }
+        function closeCustomConfirm(result) {
+            document.getElementById('custom-confirm-overlay').style.display = 'none';
+            if (_ccResolve) { _ccResolve(result); _ccResolve = null; }
+        }
+        function showCustomAlert(msg) {
+            return showCustomConfirm('✅ 完成', msg).then(() => {});
+        }
+
         async function notifySingleRoomChange() {
             const rid = mRoomId;
             if (!rid) return;
@@ -1773,9 +1816,10 @@
                 msgText = `⚠️ [Perubahan Mendadak] Kamar ${rid}：Tidak ada kebutuhan khusus`;
             }
 
-            if (confirm(`預覽即將發送的通知：\n\n${msgText}\n\n確定要發送嗎？`)) {
+            const ok = await showCustomConfirm('📢 預覽即將發送的通知', msgText + '\n\n確定要發送嗎？');
+            if (ok) {
                 await sendWebhook('single_room_update', 'ALL', { update_msg: msgText });
-                alert('已成功發送異動通知！');
+                await showCustomAlert('已成功發送異動通知！');
                 closeModal();
             }
         }
