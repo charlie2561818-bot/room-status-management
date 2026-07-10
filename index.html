@@ -1781,7 +1781,9 @@
                 const overlay = document.getElementById('custom-confirm-overlay');
                 overlay.style.display = 'flex';
                 const okBtn = document.getElementById('cc-ok-btn');
+                okBtn.innerText = '確定發送';
                 okBtn.onclick = () => closeCustomConfirm(true);
+                document.querySelector('.custom-confirm-cancel').style.display = '';
             });
         }
         function closeCustomConfirm(result) {
@@ -1789,7 +1791,17 @@
             if (_ccResolve) { _ccResolve(result); _ccResolve = null; }
         }
         function showCustomAlert(msg) {
-            return showCustomConfirm('✅ 完成', msg).then(() => {});
+            return new Promise(resolve => {
+                _ccResolve = resolve;
+                document.getElementById('cc-title').innerText = '✅ 完成';
+                document.getElementById('cc-body').innerText = msg;
+                const overlay = document.getElementById('custom-confirm-overlay');
+                overlay.style.display = 'flex';
+                const okBtn = document.getElementById('cc-ok-btn');
+                okBtn.innerText = '完成';
+                okBtn.onclick = () => closeCustomConfirm(true);
+                document.querySelector('.custom-confirm-cancel').style.display = 'none';
+            });
         }
 
         async function notifySingleRoomChange() {
