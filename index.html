@@ -653,6 +653,39 @@
             updateDateUI();
             render();
             openWeekView();
+
+            if (user.r === 'admin') {
+                if (typeof db !== 'undefined' && db) {
+                    autoCleanOldData();
+                } else {
+                    setTimeout(() => {
+                        if (typeof db !== 'undefined' && db) autoCleanOldData();
+                    }, 3000);
+                }
+            }
+        }
+
+        function autoCleanOldData() {
+            try {
+                let dt = new Date(getTwDate() + "T12:00:00");
+                dt.setDate(dt.getDate() - 2);
+                const offset = dt.getTimezoneOffset() * 60000;
+                const limitDate = (new Date(dt - offset)).toISOString().split('T')[0];
+                
+                if (db) {
+                    db.ref('status').orderByKey().endAt(limitDate).once('value', s => {
+                        if (s.exists()) {
+                            s.forEach(child => { child.ref.remove(); });
+                        }
+                    }).catch(e => {});
+                    
+                    db.ref('logs').orderByKey().endAt(limitDate).once('value', s => {
+                        if (s.exists()) {
+                            s.forEach(child => { child.ref.remove(); });
+                        }
+                    }).catch(e => {});
+                }
+            } catch(e) {}
         }
 
         function setupAyaListener() {
