@@ -1818,7 +1818,8 @@
             if (n.bed > 0) reqs.push(`Extra Bed +${n.bed}`);
             if (n.q > 0) reqs.push(`Selimut +${n.q}`);
             if (n.bath) reqs.push(`Bak Bayi`);
-            if (n.late) reqs.push(`Tamu Datang Terlambat`);
+            if (n.late) reqs.push(`Tamu Datang Terlambat (晚到)`);
+            if (n.flash) reqs.push(`Tamu Dadakan (現場客)`);
             if (n.msg && n.msg.trim() !== '') reqs.push(`Note: ${n.msg}`);
 
             let msgText;
