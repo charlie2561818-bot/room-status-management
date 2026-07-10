@@ -173,10 +173,10 @@
         .stepper { display: flex; border: 1px solid #ccc; border-radius: 15px; overflow: hidden; }
         .s-btn { width: 36px; height: 32px; background: #ddd; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; }
         .s-val { width: 36px; display: flex; justify-content: center; align-items: center; font-weight: bold; background: white; }
-        .tgl { padding: 6px 12px; border-radius: 15px; background: #eee; color: #999; font-size: 12px; font-weight: bold; cursor: pointer;}
-        .tgl.on { background: var(--st-green-bd); color: white; }
-        .tgl.on-red { background: var(--st-red-bd); color: white; }
-        .tgl.on-orange { background: #FF5722; color: white; }
+        .tgl { position: relative; width: 50px; height: 30px; border-radius: 15px; background: #ccc; cursor: pointer; transition: background 0.3s; flex-shrink: 0; }
+        .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; background: white; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .tgl.on, .tgl.on-red, .tgl.on-orange { background: #4CAF50; }
+        .tgl.on::after, .tgl.on-red::after, .tgl.on-orange::after { transform: translateX(20px); }
         .line-btn { display: block; width: 100%; padding: 12px; background: #06C755; color: white; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 15px; border: none; cursor: pointer;}
         
         .admin-area { padding: 15px; border-top: 1px solid #ddd; margin-top: 20px; }
@@ -1419,9 +1419,9 @@
             if(r.d) ctrls += mkStp('👩 人數', 'p', n.p||0, 8); else ctrls += mkStp('🛏️ 加床', 'bed', n.bed||0, r.m);
             ctrls += mkStp('🌫️ 加被', 'q', n.q||0, 5);
             
-            ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)">${n.out?'🏃 外出':'在房'}</div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
+            ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)"></div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
 
-            ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)">${n.bath?'✅ 需要':'無'}</div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)">${n.late?'🌃 晚到':'正常'}</div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)">${n.flash?'⚡ 現場客':'一般'}</div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
+            ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)"></div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)"></div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)"></div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
             placeholder="備註...">${n.msg||''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button>`;
             body.innerHTML += `<div style="border-top:1px solid #eee;">${ctrls}</div>`;
 
@@ -1635,35 +1635,33 @@
         function tog(el) {
             el.classList.toggle('on');
             let inp = el.nextElementSibling;
-            if(el.classList.contains('on')) { el.innerText='✅ 需要'; inp.value='1'; }
-            else { el.innerText='無'; inp.value=''; }
+            if(el.classList.contains('on')) { inp.value='1'; }
+            else { inp.value=''; }
         }
 
         function togRed(el) {
             el.classList.toggle('on-red');
             let inp = el.nextElementSibling;
-            if(el.classList.contains('on-red')) { el.innerText='🌃 晚到'; inp.value='1'; }
-            else { el.innerText='正常'; inp.value=''; }
+            if(el.classList.contains('on-red')) { inp.value='1'; }
+            else { inp.value=''; }
         }
 
         function togFlash(el) {
             el.classList.toggle('on-orange');
             let inp = el.nextElementSibling;
-            if(el.classList.contains('on-orange')) { el.innerText='⚡ 現場客'; inp.value='1'; }
-            else { el.innerText='一般'; inp.value=''; }
+            if(el.classList.contains('on-orange')) { inp.value='1'; }
+            else { inp.value=''; }
         }
 
         function togOut(el) {
     el.classList.toggle('on');
     let inp = el.nextElementSibling;
     if(el.classList.contains('on')) { 
-        el.innerText='🏃 外出'; 
         inp.value='1'; 
         // 新增這行：觸發外出 Webhook 通知
         sendWebhook('guest_out', mRoomId); 
     }
     else { 
-        el.innerText='在房'; 
         inp.value=''; 
     }
     // 新增這行：自動儲存，確保系統狀態與通知完美同步！
