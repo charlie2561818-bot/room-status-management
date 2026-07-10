@@ -1406,6 +1406,10 @@
             body.innerHTML += `<div style="border-top:1px solid #eee;">${ctrls}</div>`;
             const lineTxt = `Aya, Kamar ${mRoomId}. ${d.s==='red'?'KOTOR, sapu.':''} ${n.msg||''}`;
             document.getElementById('line-lnk').href = `https://line.me/R/msg/text/?${encodeURIComponent(lineTxt)}`;
+
+            if (user.r !== 'staff') {
+                body.innerHTML += `<button class="line-btn" style="background:#FF9800; color:#fff; margin-top:8px;" onclick="notifySingleRoomChange()">📢 通知阿雅此房異動</button>`;
+            }
         }
 
         function closeModal() { document.getElementById('modal').style.display='none';
@@ -1742,6 +1746,37 @@
             if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
                 await sendWebhook('special_requests', 'ALL', { req_msg: listText });
                 alert('已發送通知！');
+            }
+        }
+
+        async function notifySingleRoomChange() {
+            const rid = mRoomId;
+            if (!rid) return;
+            const target = isTraining ? trainingCache : cache;
+            const dayData = target[currDate];
+            if (!dayData || !dayData[rid]) return;
+            const n = dayData[rid].n || {};
+            const r = ROOMS.find(x => x.id === rid);
+
+            let reqs = [];
+            if (r && r.d && n.p > 0) reqs.push(`Kasur +${n.p}`);
+            if (n.bed > 0) reqs.push(`Extra Bed +${n.bed}`);
+            if (n.q > 0) reqs.push(`Selimut +${n.q}`);
+            if (n.bath) reqs.push(`Bak Bayi`);
+            if (n.late) reqs.push(`Tamu Datang Terlambat`);
+            if (n.msg && n.msg.trim() !== '') reqs.push(`Note: ${n.msg}`);
+
+            let msgText;
+            if (reqs.length > 0) {
+                msgText = `⚠️ [Perubahan Mendadak] Kamar ${rid} Kebutuhan Terbaru：${reqs.join(', ')}`;
+            } else {
+                msgText = `⚠️ [Perubahan Mendadak] Kamar ${rid}：Tidak ada kebutuhan khusus`;
+            }
+
+            if (confirm(`預覽即將發送的通知：\n\n${msgText}\n\n確定要發送嗎？`)) {
+                await sendWebhook('single_room_update', 'ALL', { update_msg: msgText });
+                alert('已成功發送異動通知！');
+                closeModal();
             }
         }
 
