@@ -241,6 +241,7 @@
             <div class="top-bar">
                 <div class="brand" id="brand-title">茶雲居</div>
                 <div>
+                    <span id="aya-lang-toggle" style="display:none; margin-right:10px; cursor:pointer; font-weight:bold; background:rgba(255,255,255,0.2); padding:4px 8px; border-radius:12px; font-size:12px;" onclick="toggleAyaLang()">🌐 INDO</span>
                     <span id="u-tag" class="user-tag">User</span>
                     <span onclick="logout()" style="font-size:12px; margin-left:8px; opacity:0.8; cursor:pointer;">登出</span>
                 </div>
@@ -327,9 +328,9 @@
     </div>
 
     <div id="alert-overlay">
-        <div class="alert-title">⚠️ PERHATIAN! (注意)</div>
+        <div class="alert-title" id="alert-title">⚠️ PERHATIAN! (注意)</div>
         <div class="alert-box" id="alert-content"></div>
-        <button class="alert-confirm-btn" onclick="closeAlert()">SAYA MENGERTI (我知道了)</button>
+        <button class="alert-confirm-btn" id="alert-btn" onclick="closeAlert()">SAYA MENGERTI (我知道了)</button>
     </div>
 
     <div id="custom-confirm-overlay">
@@ -407,7 +408,88 @@
 
         const INDO_DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         const INDO_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const EN_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const CN_DAYS = ['(日)','(一)','(二)','(三)','(四)','(五)','(六)'];
+
+        const I18N_STAFF = {
+            'KOSONG': 'VACANT',
+            'BOOKED': 'BOOKED',
+            'ADA TAMU': 'OCCUPIED',
+            'KOTOR': 'DIRTY',
+            'DND': 'DND',
+            'Kamar': 'Room',
+            'Kasur': 'Bed',
+            'Extra Bed': 'Extra Bed',
+            'Selimut': 'Blanket',
+            'Bak Bayi': 'Baby Bath',
+            'Nanti': 'Arrive late',
+            'TAMU DADAKAN': 'Walk-in',
+            'Tamu di kamar ini akan datang terlambat, jadi bisa utamakan membersihkan kamar lain dulu.': 'Guests in this room will arrive late, so you can prioritize cleaning other rooms.',
+            'PRIORITAS (Segera)': 'PRIORITY (Urgent)',
+            'Siapkan': 'Prepare',
+            'Tamu sedang keluar.': 'Guests are out.',
+            'Silahkan sapu.': 'Please clean.',
+            'SELESAI (完成)': 'Done',
+            'Kamar yang berkelanjutan tidak perlu dibersihkan.': 'Continuous rooms do not need to be cleaned.',
+            'Status:': 'Status:',
+            'Tidak ada tindakan.': 'No action.',
+            'Jadwal 8-Hari': '8-Day Schedule',
+            'Ringkasan 8 Hari': '8-Day Summary',
+            'Jadwal Kamar (Kamar mungkin berubah)': 'Room Schedule (Rooms may change)',
+            'MASUK': 'IN',
+            'LANJUT': 'STAY',
+            'KELUAR': 'OUT',
+            'MSK': 'IN',
+            'LJT': 'STAY',
+            'KLR': 'OUT',
+            'LCK': 'LCK',
+            'HARI INI': 'TODAY',
+            '⚠️ PERHATIAN! (注意)': '⚠️ ATTENTION!',
+            '⚠️ <b>ADA PERUBAHAN BARU!</b><br><br>Data kamar telah diperbarui.<br>Silahkan cek status kamar.<br>(房況已更新，請確認)': '⚠️ <b>NEW UPDATE!</b><br><br>Room data has been updated.<br>Please check the room status.',
+            'SAYA MENGERTI (我知道了)': 'I UNDERSTAND'
+        };
+
+        function getText(text) {
+            if (user && user.r === 'staff' && user.l === 'en') {
+                return I18N_STAFF[text] || text;
+            }
+            return text;
+        }
+
+        function pluralize(count, word) {
+            let text = getText(word);
+            if (user && user.r === 'staff' && user.l === 'en' && count > 1) {
+                return text + 's';
+            }
+            return text;
+        }
+
+        function toggleAyaLang() {
+            if (user && user.r === 'staff') {
+                user.l = user.l === 'id' ? 'en' : 'id';
+                localStorage.setItem('aya_lang', user.l);
+                localStorage.setItem('tea_user', JSON.stringify(user));
+                updateDateUI();
+                render();
+                if(document.getElementById('week-view-layer').style.display === 'flex') {
+                    openWeekView(); // Re-render week view
+                }
+                const mRoomIdVal = mRoomId;
+                if (document.getElementById('modal').style.display === 'flex') {
+                    openModal(mRoomIdVal); // Re-render modal
+                }
+                
+                document.getElementById('week-btn-txt').innerText = getText('Jadwal 8-Hari');
+                document.getElementById('wv-title').innerText = getText('Ringkasan 8 Hari');
+                document.getElementById('wv-aya-alert').innerText = '⚠️ ' + getText('Jadwal Kamar (Kamar mungkin berubah)');
+                document.getElementById('wv-legend').innerHTML = `
+                    <div class="leg-item"><span class="leg-dot" style="background:#F57F17"></span> ${getText('MASUK')}</div>
+                    <div class="leg-item"><span class="leg-dot" style="background:#4CAF50"></span> ${getText('LANJUT')}</div>
+                    <div class="leg-item"><span class="leg-dot" style="background:#D32F2F"></span> ${getText('KELUAR')}</div>
+                `;
+            }
+        }
 
         let db=null, dbRef=null, logRef=null;
         let user={}; 
@@ -613,7 +695,7 @@
                 if(role==='boss') user={n:'🧔🏻 阿成',r:'admin',l:'cn'};
                 if(role==='wife') user={n:'👩🏻 Ting',r:'admin',l:'cn'};
                 if(role==='mom')  user={n:'👵🏻 媽媽',r:'admin',l:'cn'};
-                if(role==='aya')  user={n:'👩🏼 Aya', r:'staff',l:'id'};
+                if(role==='aya')  user={n:'👩🏼 Aya', r:'staff',l: localStorage.getItem('aya_lang') || 'id'};
                 localStorage.setItem('tea_user', JSON.stringify(user));
             }
 
@@ -626,14 +708,22 @@
                 document.getElementById('admin-area').style.display='none';
                 document.getElementById('wv-tools').style.display='none';
                 document.getElementById('day-toolbar').style.display='none'; 
+                document.getElementById('aya-lang-toggle').style.display='inline-block';
+                document.getElementById('aya-lang-toggle').innerText = user.l === 'en' ? '🌐 EN' : '🌐 INDO';
                 
                 if(!isTraining) document.getElementById('wv-nav-ctrls').style.display='none'; 
                 document.getElementById('wv-legend').classList.remove('hidden');
                 document.getElementById('wv-aya-alert').classList.remove('hidden'); 
                 document.querySelectorAll('input[type="date"]').forEach(el => el.style.display = 'none');
                 
-                document.getElementById('week-btn-txt').innerText = 'Jadwal 8-Hari';
-                document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
+                document.getElementById('week-btn-txt').innerText = getText('Jadwal 8-Hari');
+                document.getElementById('wv-title').innerText = getText('Ringkasan 8 Hari');
+                document.getElementById('wv-aya-alert').innerText = '⚠️ ' + getText('Jadwal Kamar (Kamar mungkin berubah)');
+                document.getElementById('wv-legend').innerHTML = `
+                    <div class="leg-item"><span class="leg-dot" style="background:#F57F17"></span> ${getText('MASUK')}</div>
+                    <div class="leg-item"><span class="leg-dot" style="background:#4CAF50"></span> ${getText('LANJUT')}</div>
+                    <div class="leg-item"><span class="leg-dot" style="background:#D32F2F"></span> ${getText('KELUAR')}</div>
+                `;
                 
                 if(!isTraining) { 
                     currDate = getTwDate(); 
@@ -641,6 +731,7 @@
                     setupAyaListener(); 
                 }
             } else {
+                document.getElementById('aya-lang-toggle').style.display='none';
                 document.getElementById('day-toolbar').style.display='flex'; 
                 document.querySelectorAll('input[type="date"]').forEach(el => el.style.display = 'block');
             }
@@ -710,12 +801,25 @@
         function showAlertModal() {
             const overlay = document.getElementById('alert-overlay');
             const content = document.getElementById('alert-content');
-            content.innerHTML = `<div class="alert-item" style="font-size:18px; padding:20px;">⚠️ <b>ADA PERUBAHAN BARU!</b><br><br>Data kamar telah diperbarui.<br>Silahkan cek status kamar.<br>(房況已更新，請確認)</div>`;
-            overlay.style.display = 'flex';
+            
+            const alertTitle = document.getElementById('alert-title');
+            if (alertTitle) alertTitle.innerText = getText('⚠️ PERHATIAN! (注意)');
+            
+            const alertBtn = document.getElementById('alert-btn');
+            if (alertBtn) alertBtn.innerText = getText('SAYA MENGERTI (我知道了)');
+            
+            if (content) content.innerHTML = `<div class="alert-item" style="font-size:18px; padding:20px;">${getText('⚠️ <b>ADA PERUBAHAN BARU!</b><br><br>Data kamar telah diperbarui.<br>Silahkan cek status kamar.<br>(房況已更新，請確認)')}</div>`;
+            if (overlay) overlay.style.display = 'flex';
             alertQueue = [];
         }
         
-        function closeAlert() { document.getElementById('alert-overlay').style.display='none'; }
+        function closeAlert() { 
+            document.getElementById('alert-overlay').style.display='none'; 
+            loadData(currDate);
+            if (document.getElementById('week-view-layer').style.display === 'flex') {
+                refreshWeekView();
+            }
+        }
 
         function startTraining() {
             if(confirm("進入練習模式？ (Masuk Mode Latihan?)\n系統將自動產生測試考題。\n重整網頁可退出。")) {
@@ -776,17 +880,21 @@
             const dateObj = new Date(currDate + "T12:00:00");
             let txt = currDate;
             let badge = '今天';
-            if(user.l==='id') {
+            if(user.r==='staff') {
                 const dayIdx = dateObj.getDay();
-                txt = `${INDO_DAYS[dayIdx]}, ${currDate.split('-')[2]}-${currDate.split('-')[1]}`; 
-                badge = 'HARI INI';
+                const dayName = user.l === 'en' ? EN_DAYS[dayIdx] : INDO_DAYS[dayIdx];
+                txt = `${dayName}, ${currDate.split('-')[2]}-${currDate.split('-')[1]}`; 
+                badge = getText('HARI INI');
             } else {
                 const dayIdx = dateObj.getDay();
                 txt = `${currDate} ${CN_DAYS[dayIdx]}`;
             }
             document.getElementById('date-txt').innerText = txt;
-            document.getElementById('today-bdg').innerText = (currDate!==today) ? (user.l==='id'?'↺ HARI INI':'↺ 回今天') : badge;
+            document.getElementById('today-bdg').innerText = (currDate!==today) ? (user.r==='staff' ? `↺ ${getText('HARI INI')}` : '↺ 回今天') : badge;
             document.getElementById('today-bdg').style.display = (currDate!==today)?'inline-block':'none';
+            if (user.r === 'staff') {
+                document.getElementById('aya-lang-toggle').innerText = user.l === 'en' ? '🌐 EN' : '🌐 INDO';
+            }
         }
         function goToday() { pickDate(getTwDate()); }
 
@@ -817,29 +925,29 @@
                 const d = safeGetRoom(currDate, r.id); 
                 const st = ST[d.s] || ST['blue'];
                 const n = d.n;
-                const isId = user.l === 'id';
+                const isStaff = user.r === 'staff';
                 const isDirty = globalDirty[r.id] && !isTraining; 
 
                 const card = document.createElement('div');
                 card.className = `card ${st.cls}`;
                 
-                let statusTextContent = isId ? st.id : st.cn;
+                let statusTextContent = isStaff ? getText(st.id) : st.cn;
 
                 if (isDirty) {
                     card.style.border = "4px solid #D32F2F"; 
-                    statusTextContent = isId ? 'KOTOR' : '已退房';
+                    statusTextContent = isStaff ? getText('KOTOR') : '已退房';
                 }
 
                 if(d.s==='red' && n.late) card.style.opacity='0.7';
 
                 let tags = '';
-                if(n.late) tags+=`<span class="tag">🌃 ${isId?'Nanti':'晚'}</span>`;
-                if(n.flash) tags+=`<span class="tag tag-flash">⚡ ${isId?'TAMU DADAKAN':'現場客'}</span>`;
-                if(r.d && n.p) tags+=`<span class="tag tag-high">👩 ${n.p} ${isId?'Kasur':'床'}</span>`;
+                if(n.late) tags+=`<span class="tag">🌃 ${isStaff?getText('Nanti'):'晚'}</span>`;
+                if(n.flash) tags+=`<span class="tag tag-flash">⚡ ${isStaff?getText('TAMU DADAKAN'):'現場客'}</span>`;
+                if(r.d && n.p) tags+=`<span class="tag tag-high">👩 ${n.p} ${isStaff?pluralize(n.p, 'Kasur'):'床'}</span>`;
                 if(n.bed) tags+=`<span class="tag tag-high">🛏️ +${n.bed}</span>`;
-                if(n.q) tags+=`<span class="tag tag-high"><span class="icon" style="font-size:14px">layers</span> +${n.q} ${isId?'Selimut':'被'}</span>`;
+                if(n.q) tags+=`<span class="tag tag-high"><span class="icon" style="font-size:14px">layers</span> +${n.q} ${isStaff?pluralize(n.q, 'Selimut'):'被'}</span>`;
                 if(n.out) tags+=`<span class="tag" style="background:#E0F7FA; color:#006064;">🏃 外出</span>`;
-                if(n.bath) tags+=`<span class="tag">🛁 Bak</span>`;
+                if(n.bath) tags+=`<span class="tag">🛁 ${isStaff?getText('Bak Bayi'):'Bak'}</span>`;
                 if(n.msg) tags+=`<span class="tag" style="color:purple">💬 Note</span>`;
 
                 let moon = (d.s==='red'&&n.late)?'<div class="moon-icon">🌃</div>':'';
@@ -847,7 +955,7 @@
                     statusTextContent += ' 🏃';
                 }
 
-                card.innerHTML = `${moon}<div class="r-head"><div><div class="r-no">${r.id}</div><div class="r-type">${isId?'Kamar':''} ${r.t}</div></div><div style="text-align:right"><div class="st-icon">${st.icon}</div><div class="st-txt">${statusTextContent}</div></div></div><div class="tags">${tags}</div>`;
+                card.innerHTML = `${moon}<div class="r-head"><div><div class="r-no">${r.id}</div><div class="r-type">${isStaff?getText('Kamar'):''} ${r.t}</div></div><div style="text-align:right"><div class="st-icon">${st.icon}</div><div class="st-txt">${statusTextContent}</div></div></div><div class="tags">${tags}</div>`;
                 
                 if (user.r !== 'staff') {
                     card.setAttribute('oncontextmenu', 'return false;');
@@ -930,7 +1038,7 @@
             const mm = startObj.getMonth() + 1;
             
             if(user.r === 'staff') {
-                document.getElementById('wv-title').innerText = 'Ringkasan 8 Hari';
+                document.getElementById('wv-title').innerText = getText('Ringkasan 8 Hari');
             } else {
                 document.getElementById('wv-title').innerText = `🗓 ${yyyy}年 ${mm}月`;
             }
@@ -968,7 +1076,8 @@
             let currentMonth = '';
             dates.forEach((d, i) => {
                 const mIdx = parseInt(d.split('-')[1]) - 1;
-                const monthName = user.l==='id' ? INDO_MONTHS[mIdx] : `${mIdx+1}月`;
+                const isStaff = user.r === 'staff';
+                const monthName = isStaff ? (user.l === 'en' ? EN_MONTHS[mIdx] : INDO_MONTHS[mIdx]) : `${mIdx+1}月`;
                 if(monthName !== currentMonth) {
                     html += `<th style="border-left:2px solid #999; text-align:left; padding-left:5px; color:#555; font-weight:900; cursor:pointer;" onclick="if(user.r !== 'staff') broadcastSpecialRequestsForDay('${d}')" title="單日特殊需求廣播">${monthName}</th>`;
                     currentMonth = monthName;
@@ -982,7 +1091,7 @@
             dates.forEach(d => {
                 const dayIdx = new Date(d + "T12:00:00").getDay();
                 const dateNum = d.split('-')[2];
-                let lbl = user.l==='id' ? `${INDO_DAYS[dayIdx]} ${dateNum}` : `${dateNum} ${CN_DAYS[dayIdx]}`;
+                let lbl = user.r === 'staff' ? `${user.l === 'en' ? EN_DAYS[dayIdx] : INDO_DAYS[dayIdx]} ${dateNum}` : `${dateNum} ${CN_DAYS[dayIdx]}`;
                 
                 let isHoliday = (dayIdx === 0 || dayIdx === 6);
                 const yyyy = d.substring(0, 4);
@@ -1004,15 +1113,15 @@
                     const cd = safeGetRoom(d, r.id);
                     const cls = 'c-'+cd.s; 
              
-                    const isId = user.l === 'id';
+                    const isStaff = user.r === 'staff';
                     let code = '';
-                    if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; else if(cd.s==='locked')code='LCK'; } 
+                    if(isStaff) { if(cd.s==='yellow')code=getText('MSK'); else if(cd.s==='green')code=getText('LJT'); else if(cd.s==='red')code=getText('KLR'); else if(cd.s==='locked')code=getText('LCK'); } 
                     else { if(cd.s==='yellow')code='入';
                     else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
           
                     let icons = '';
-                    if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isId?'K':'床'}</span> `;
+                    if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isStaff?getText('Kasur').charAt(0):'床'}</span> `;
                     if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
                     if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
         
@@ -1293,17 +1402,17 @@
             if(!cell) return;
             const cd = safeGetRoom(d, rid);
             const cls = 'c-'+cd.s;
-            const isId = user.l === 'id';
+            const isStaff = user.r === 'staff';
             const r = ROOMS.find(x=>x.id===rid);
             const today = getTwDate(); 
 
             let code = '';
-            if(isId) { if(cd.s==='yellow')code='MSK'; else if(cd.s==='green')code='LJT'; else if(cd.s==='red')code='KLR'; else if(cd.s==='locked')code='LCK'; } 
+            if(isStaff) { if(cd.s==='yellow')code=getText('MSK'); else if(cd.s==='green')code=getText('LJT'); else if(cd.s==='red')code=getText('KLR'); else if(cd.s==='locked')code=getText('LCK'); } 
             else { if(cd.s==='yellow')code='入';
             else if(cd.s==='green')code='續'; else if(cd.s==='red')code='退'; else if(cd.s==='locked')code='鎖'; }
 
             let icons = '';
-            if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isId?'K':'床'}</span> `;
+            if(r.d && cd.n.p) icons += `<span class="icon-hl">${cd.n.p}${isStaff?getText('Kasur').charAt(0):'床'}</span> `;
             if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
             if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
             if(cd.n.bath) icons += `🛁 `;
@@ -1415,21 +1524,22 @@
 
             if(user.r==='staff') {
                 let ins = '';
-                if(d.s==='red') ins += n.late ? `🌃 <b>Tamu di kamar ini akan datang terlambat, jadi bisa utamakan membersihkan kamar lain dulu.</b><br>` : `🧹 <b>PRIORITAS (Segera)</b><br>`;
-                if(n.flash) ins += `⚡ <b>TAMU DADAKAN (現場客)</b><br>`;
-                if(r.d && n.p) ins += `👩 Siapkan <b>${n.p} Kasur</b><br>`;
-                if(n.bed) ins += `🛏️ +${n.bed} Extra Bed<br>`;
-                if(n.q) ins += `<span class="icon">layers</span> +${n.q} Selimut<br>`;
-                if(n.out) ins += `🏃 <b>Tamu sedang keluar.</b><br>`;
-                if(n.bath) ins += `🛁 Bak Bayi<br>`;
+                if(n.late) ins += `🌃 <b>${getText('Tamu di kamar ini akan datang terlambat, jadi bisa utamakan membersihkan kamar lain dulu.')}</b><br>`;
+                if(d.s==='red' && !n.late) ins += `🧹 <b>${getText('PRIORITAS (Segera)')}</b><br>`;
+                if(n.flash) ins += `⚡ <b>${getText('TAMU DADAKAN')}</b><br>`;
+                if(r.d && n.p) ins += `👩 ${getText('Siapkan')} <b>${n.p} ${pluralize(n.p, 'Kasur')}</b><br>`;
+                if(n.bed) ins += `🛏️ +${n.bed} ${pluralize(n.bed, 'Extra Bed')}<br>`;
+                if(n.q) ins += `<span class="icon">layers</span> +${n.q} ${pluralize(n.q, 'Selimut')}<br>`;
+                if(n.out) ins += `🏃 <b>${getText('Tamu sedang keluar.')}</b><br>`;
+                if(n.bath) ins += `🛁 ${getText('Bak Bayi')}<br>`;
                 if(n.msg) ins += `💬 ${n.msg} <a href="https://translate.google.com/?sl=zh-TW&tl=id&text=${encodeURIComponent(n.msg)}&op=translate" target="_blank">🌐 Translate</a>`;
                 
                 if(d.s==='red' || globalDirty[rid]) {
-                    body.innerHTML = `<div style="background:#FFF3E0; padding:15px; border-radius:10px; margin-bottom:15px; font-size:16px;">${ins||'Silahkan sapu.'}</div><button class="line-btn" style="background:#2196F3" onclick="finishCleaning('${rid}')">✅ SELESAI (完成)</button>`;
+                    body.innerHTML = `<div style="background:#FFF3E0; padding:15px; border-radius:10px; margin-bottom:15px; font-size:16px;">${ins||getText('Silahkan sapu.')}</div><button class="line-btn" style="background:#2196F3" onclick="finishCleaning('${rid}')">✅ ${getText('SELESAI (完成)')}</button>`;
                 } else if (d.s === 'purple') {
-                    body.innerHTML = `<div style="padding:15px; color:#666; font-size:16px; font-weight:bold;">⛔ Kamar yang berkelanjutan tidak perlu dibersihkan.</div>`;
+                    body.innerHTML = `<div style="padding:15px; color:#666; font-size:16px; font-weight:bold;">⛔ ${getText('Kamar yang berkelanjutan tidak perlu dibersihkan.')}</div>`;
                 } else {
-                    body.innerHTML = `<div style="padding:15px; color:#666;">${ins||'Status: '+ST[d.s].id}<br><br>Tidak ada tindakan.</div>`;
+                    body.innerHTML = `<div style="padding:15px; color:#666;">${ins||getText('Status:')+' '+getText(ST[d.s].id)}<br><br>${getText('Tidak ada tindakan.')}</div>`;
                 }
                 return;
             }
