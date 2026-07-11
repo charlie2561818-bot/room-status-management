@@ -52,12 +52,12 @@
             </div>
             <div class="date-bar">
                 <button class="date-nav-btn" onclick="changeDate(-1)">&#10094;</button>
-                <div class="date-display" style="position:relative; display:flex; align-items:center;">
+                <div class="date-display" style="position:relative; display:flex; align-items:center;" onclick="triggerDatePicker('native-dp')">
                     <span class="icon" style="font-size:16px">event</span>
                     <span id="date-txt">...</span>
                     <span class="icon" style="font-size:18px; margin-left:4px;">arrow_drop_down</span>
                     <span id="today-bdg" class="today-badge" onclick="event.stopPropagation(); goToday();" style="position:relative; z-index:2;">今天</span>
-                    <input type="date" id="native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;" onchange="pickDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault();">
+                    <input type="date" id="native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;" onchange="pickDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault(); else triggerDatePicker('native-dp');">
                 </div>
                 <button class="date-nav-btn" onclick="changeDate(1)">&#10095;</button>
                 <div id="week-btn" class="week-btn" onclick="openWeekView()">
@@ -96,10 +96,10 @@
 
     <div id="week-view-layer">
         <div class="wv-header">
-            <div style="font-weight:bold; font-size:16px; position:relative; display:flex; align-items:center;">
+            <div style="font-weight:bold; font-size:16px; position:relative; display:flex; align-items:center;" onclick="triggerDatePicker('wv-native-dp')">
                 <span id="wv-title">🗓 未來 30 天總覽</span>
                 <span class="icon" style="font-size:18px; margin-left:4px;">arrow_drop_down</span>
-                <input type="date" id="wv-native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="pickWeekDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault();">
+                <input type="date" id="wv-native-dp" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" onchange="pickWeekDate(this.value)" onclick="if(user.r === 'staff') event.preventDefault(); else triggerDatePicker('wv-native-dp');">
             </div>
             <div class="wv-nav" id="wv-nav-ctrls">
                 <button class="wv-nav-btn" onclick="goYesterdayInWeek()" style="background:#8D6E63; color:white; margin-right: 4px;">↺ 昨天</button>

@@ -607,6 +607,15 @@ function updateDateUI() {
     const dp = document.getElementById('native-dp');
     if (dp) dp.value = currDate;
 }
+
+function triggerDatePicker(id) {
+    if (user && user.r === 'staff') return;
+    const dp = document.getElementById(id);
+    if (dp && dp.showPicker) {
+        try { dp.showPicker(); } catch (e) { console.warn(e); }
+    }
+}
+
 function goToday() { pickDate(getTwDate()); }
 
 function setFloor(f, el) { filter = f; document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); el.classList.add('active'); render(); }
