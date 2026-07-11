@@ -602,6 +602,10 @@ function updateDateUI() {
     if (user.r === 'staff') {
         document.getElementById('aya-lang-toggle').innerText = user.l === 'en' ? '🌐 EN' : '🌐 INDO';
     }
+    
+    // Sync native date picker value to avoid "no reaction" when picking the same date again
+    const dp = document.getElementById('native-dp');
+    if (dp) dp.value = currDate;
 }
 function goToday() { pickDate(getTwDate()); }
 
@@ -750,6 +754,8 @@ async function refreshWeekView() {
     } else {
         document.getElementById('wv-title').innerText = `🗓 ${yyyy}年 ${mm}月`;
     }
+    const wvDp = document.getElementById('wv-native-dp');
+    if (wvDp) wvDp.value = weekStartDate;
 
     const dates = [];
     const daysToShow = user.r === 'staff' ? 8 : 30;
