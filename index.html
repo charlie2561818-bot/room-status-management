@@ -258,6 +258,19 @@
         .custom-confirm-actions button { flex: 1; padding: 16px; font-size: 17px; font-weight: 700; border: none; cursor: pointer; }
         .custom-confirm-cancel { background: #f5f5f5; color: #666; }
         .custom-confirm-ok { background: #FF9800; color: #fff; }
+
+        /* --- Aya Reminder Modal --- */
+        #aya-reminder-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); z-index: 10001; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .aya-reminder-card { background: #fff; width: 100%; max-width: 370px; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.35); overflow: hidden; position: relative; animation: ayaSlideIn 0.35s ease; }
+        @keyframes ayaSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .aya-reminder-close { position: absolute; top: 10px; right: 14px; font-size: 22px; color: #999; cursor: pointer; line-height: 1; z-index: 1; transition: color 0.2s; }
+        .aya-reminder-close:hover { color: #333; }
+        .aya-reminder-header { background: linear-gradient(135deg, #8D6E63, #4E342E); color: #fff; padding: 18px 20px; font-size: 17px; font-weight: 900; text-align: center; letter-spacing: 0.5px; }
+        .aya-reminder-body { padding: 24px 20px 16px; font-size: 15px; color: #444; line-height: 1.7; text-align: center; }
+        .aya-reminder-body .reminder-emoji { font-size: 36px; display: block; margin-bottom: 12px; }
+        .aya-reminder-footer { padding: 12px 20px 18px; display: flex; align-items: center; }
+        .aya-reminder-footer label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #888; cursor: pointer; user-select: none; }
+        .aya-reminder-footer input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4E342E; cursor: pointer; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -410,6 +423,20 @@
         </div>
     </div>
 
+    <div id="aya-reminder-modal" onclick="if(event.target===this) closeAyaReminder()">
+        <div class="aya-reminder-card">
+            <div class="aya-reminder-close" onclick="closeAyaReminder()">&times;</div>
+            <div class="aya-reminder-header">📋 Pengingat / Reminder</div>
+            <div class="aya-reminder-body">
+                <span class="reminder-emoji">🧹✨</span>
+                <span id="aya-reminder-text"></span>
+            </div>
+            <div class="aya-reminder-footer">
+                <label><input type="checkbox" id="aya-reminder-chk"><span id="aya-reminder-chk-label"></span></label>
+            </div>
+        </div>
+    </div>
+
     <div id="modal" class="modal-mask" onclick="if(event.target===this) closeModal()">
         <div class="modal-box">
             <div class="m-head">
@@ -522,8 +549,21 @@
             'Requests': 'Requests',
             '👆 Tap a date to view requests': '👆 Ketuk tanggal untuk melihat permintaan',
             'Tidak ada permintaan khusus': 'No special requests',
-            'Jangan Ganggu': 'Do Not Disturb'
+            'Jangan Ganggu': 'Do Not Disturb',
+            'aya_reminder_text': "Remember to click 'Done' for the rooms you have finished cleaning when you have time~!",
+            'aya_reminder_no_today': 'Don\'t remind me again today'
         };
+
+        const I18N_STAFF_ID = {
+            'aya_reminder_text': 'Jangan lupa untuk klik \'Selesai\' untuk kamar yang sudah dibersihkan jika ada waktu ya~!',
+            'aya_reminder_no_today': 'Jangan ingatkan lagi hari ini'
+        };
+
+        function getStaffText(key) {
+            if (!user || user.r !== 'staff') return key;
+            if (user.l === 'en') return I18N_STAFF[key] || key;
+            return I18N_STAFF_ID[key] || key;
+        }
 
         function getText(text) {
             if (user && user.r === 'staff' && user.l === 'en') {
@@ -563,6 +603,39 @@
                     <div class="leg-item"><span class="leg-dot" style="background:#4CAF50"></span> ${getText('LANJUT')}</div>
                     <div class="leg-item"><span class="leg-dot" style="background:#D32F2F"></span> ${getText('KELUAR')}</div>
                 `;
+                updateAyaReminderLang();
+            }
+        }
+
+        function getTodayStr() {
+            const d = new Date(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0');
+            return d.getFullYear() + '-' + mm + '-' + dd;
+        }
+
+        function showAyaReminderIfNeeded() {
+            if (!user || user.r !== 'staff') return;
+            const today = getTodayStr();
+            if (localStorage.getItem('aya_hide_reminder_date') === today) return;
+            const modal = document.getElementById('aya-reminder-modal');
+            document.getElementById('aya-reminder-text').innerText = getStaffText('aya_reminder_text');
+            document.getElementById('aya-reminder-chk-label').innerText = getStaffText('aya_reminder_no_today');
+            document.getElementById('aya-reminder-chk').checked = false;
+            modal.style.display = 'flex';
+        }
+
+        function closeAyaReminder() {
+            const chk = document.getElementById('aya-reminder-chk');
+            if (chk.checked) {
+                localStorage.setItem('aya_hide_reminder_date', getTodayStr());
+            }
+            document.getElementById('aya-reminder-modal').style.display = 'none';
+        }
+
+        function updateAyaReminderLang() {
+            const modal = document.getElementById('aya-reminder-modal');
+            if (modal.style.display === 'flex') {
+                document.getElementById('aya-reminder-text').innerText = getStaffText('aya_reminder_text');
+                document.getElementById('aya-reminder-chk-label').innerText = getStaffText('aya_reminder_no_today');
             }
         }
 
@@ -815,6 +888,7 @@
                     loadData(currDate); 
                     setupAyaListener(); 
                 }
+                showAyaReminderIfNeeded();
             } else {
                 document.getElementById('aya-lang-toggle').style.display='none';
                 document.getElementById('day-toolbar').style.display='flex'; 
