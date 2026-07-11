@@ -640,6 +640,10 @@
                 } catch(e){console.error(e);}
             } else { ensureData(currDate); }
             
+            if (user.r === 'staff' && !isTraining && db) {
+                setupAyaListener();
+            }
+            
             setTimeout(() => {
                 if (sessionStorage.getItem('isWeekViewOpen') === 'true') {
                     openWeekView();
