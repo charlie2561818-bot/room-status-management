@@ -856,15 +856,36 @@
             } catch(e) {}
         }
 
+        let lastKnownUpdate = null;
         function setupAyaListener() {
             if(isTraining) return; 
             if(globalUpdateListener) globalUpdateListener.off();
             globalUpdateListener = db.ref('global/last_update');
             let initial = true;
             globalUpdateListener.on('value', snap => {
-                if(initial) { initial=false; return; } 
-                if(snap.val()) {
+                const val = snap.val();
+                if(initial) { initial=false; lastKnownUpdate=val; return; } 
+                if(val && val !== lastKnownUpdate) {
+                     lastKnownUpdate = val;
                      db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
+                }
+            });
+            
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible' && user.r === 'staff' && !isTraining && db) {
+                    db.ref('global/last_update').once('value', snap => {
+                        const val = snap.val();
+                        if (val && lastKnownUpdate && val !== lastKnownUpdate) {
+                            lastKnownUpdate = val;
+                            db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
+                        } else {
+                            lastKnownUpdate = val;
+                        }
+                    });
+                    loadData(currDate);
+                    if (document.getElementById('week-view-layer').style.display === 'flex') {
+                        refreshWeekView();
+                    }
                 }
             });
         }
