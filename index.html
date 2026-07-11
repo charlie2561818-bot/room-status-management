@@ -447,7 +447,12 @@
             'HARI INI': 'TODAY',
             '⚠️ PERHATIAN! (注意)': '⚠️ ATTENTION!',
             '⚠️ <b>ADA PERUBAHAN BARU!</b><br><br>Data kamar telah diperbarui.<br>Silahkan cek status kamar.<br>(房況已更新，請確認)': '⚠️ <b>NEW UPDATE!</b><br><br>Room data has been updated.<br>Please check the room status.',
-            'SAYA MENGERTI (我知道了)': 'I UNDERSTAND'
+            'SAYA MENGERTI (我知道了)': 'I UNDERSTAND',
+            'PIN Salah!': 'Wrong PIN!',
+            'Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)': 'Can only view yesterday and 7 days ahead!',
+            '無法換房：目標房間必須是「空房」！': 'Cannot move: Target room must be VACANT!',
+            '已發送通知！': 'Notification sent!',
+            '今日目前沒有特殊需求的房間喔！': 'No rooms with special requests today!'
         };
 
         function getText(text) {
@@ -835,7 +840,7 @@
             t[d]['205'] = {s:'yellow', n:{bed:1}};
             t[d]['202'] = {s:'green', n:{p:8}};
         }
-        function checkPin() { if(document.getElementById('aya-pin').value === ayaPin) login('aya'); else { alert('PIN Salah!'); document.getElementById('aya-pin').value=''; }}
+        function checkPin() { if(document.getElementById('aya-pin').value === ayaPin) login('aya'); else { alert(getText('PIN Salah!')); document.getElementById('aya-pin').value=''; }}
         function logout() { 
             localStorage.removeItem('tea_user'); 
             if (window.location.search.includes('mode=aya')) {
@@ -867,7 +872,7 @@
                 const diff = Math.round((d1-d2)/(86400000));
                 
                 if(diff < -1 || diff > 7) { 
-                    alert('Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)'); 
+                    alert(getText('Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)')); 
                     return; 
                 }
             }
@@ -1498,7 +1503,7 @@
         function openModal(rid) {
             if(moveMode) {
                 const target = safeGetRoom(currDate, rid);
-                if(target.s !== 'blue') { alert('無法換房：目標房間必須是「空房」！'); return; }
+                if(target.s !== 'blue') { alert(getText('無法換房：目標房間必須是「空房」！')); return; }
                 executeMove(rid);
                 return;
             }
@@ -1652,7 +1657,7 @@
         async function broadcastAllCheckout() {
             if(confirm('確定要發送「今日客人已全數退房」通知嗎？')) {
                 await sendWebhook('all_checkout', 'ALL');
-                alert('已發送通知！');
+                alert(getText('已發送通知！'));
             }
         }
 
@@ -1854,7 +1859,7 @@
             });
 
             if (requests.length === 0) {
-                alert('今日目前沒有特殊需求的房間喔！');
+                alert(getText('今日目前沒有特殊需求的房間喔！'));
                 return;
             }
 
@@ -1864,7 +1869,7 @@
             
             if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
                 await sendWebhook('special_requests', 'ALL', { req_msg: listText });
-                alert('已發送通知！');
+                alert(getText('已發送通知！'));
             }
         }
 
@@ -1895,7 +1900,7 @@
             });
 
             if (requests.length === 0) {
-                alert('今日目前沒有特殊需求的房間喔！');
+                alert(getText('今日目前沒有特殊需求的房間喔！'));
                 return;
             }
 
@@ -1905,7 +1910,7 @@
             
             if (confirm(`預覽即將發送的清單：\n\n${listText}\n\n確定要發送嗎？`)) {
                 await sendWebhook('special_requests', 'ALL', { req_msg: listText });
-                alert('已發送通知！');
+                alert(getText('已發送通知！'));
             }
         }
 
