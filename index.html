@@ -123,7 +123,56 @@
         .wv-sync-btn { background: #ccc; padding: 5px 10px; border-radius: 4px; font-weight: bold; }
         .wv-sync-btn.active { background: var(--st-yl-bd); color: black; border: 2px solid #F57F17; }
         
+        .wv-content-wrapper { display: flex; flex: 1; overflow: hidden; flex-direction: row; background: #fafafa; }
         .wv-grid-container { flex: 1; overflow: auto; padding-bottom: 20px; max-width: 100vw; position: relative; -webkit-overflow-scrolling: touch; }
+        
+        /* Request Dashboard */
+        #request-dashboard {
+            width: 300px;
+            background: #FFFFFF;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin: 16px 16px 16px 0;
+        }
+        @media (max-width: 768px) {
+            .wv-content-wrapper { flex-direction: column; padding-bottom: 0; }
+            #request-dashboard { 
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                width: 100%;
+                margin: 0;
+                height: 50vh;
+                border-radius: 24px 24px 0 0;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                z-index: 600;
+                flex: none;
+            }
+            #request-dashboard.mobile-open { transform: translateY(0); }
+            .rd-close-wrapper { display: flex; width: 100%; height: 36px; align-items: center; justify-content: center; cursor: pointer; }
+            .rd-close-handle { display: block; width: 40px; height: 5px; background: #ccc; border-radius: 3px; }
+        }
+        .rd-close-wrapper, .rd-close-handle { display: none; }
+        .rd-header { font-weight: 600; color: #1C1C1E; padding: 16px 20px; font-size: 1.1em; border-bottom: 1px solid rgba(0,0,0,0.05); background: #F9F9FB; display: flex; justify-content: space-between; align-items: center; }
+        #close-dashboard-btn { cursor: pointer; font-size: 18px; color: #8E8E93; padding: 4px; display: none; line-height: 1; }
+        @media (max-width: 768px) {
+            #close-dashboard-btn { display: block; }
+        }
+        .rd-content { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .rd-empty { color: #8E8E93; font-size: 0.9em; text-align: center; margin: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;}
+        .rd-empty-icon { font-size: 40px; margin-bottom: 8px; }
+        .rd-item { background: #F2F2F7; border-radius: 12px; padding: 12px 16px; }
+        .rd-room-title { font-weight: bold; font-size: 1.1em; color: #1C1C1E; margin-bottom: 6px; }
+        .rd-detail { font-size: 0.9em; color: #3A3A3C; line-height: 1.5; }
+        .req-dot { display: inline-block; width: 6px; height: 6px; background-color: #FF9500; border-radius: 50%; margin-left: 4px; vertical-align: super; }
+        .col-selected { background-color: #E8E8ED !important; }
         
         /* Sticky Table */
         .wv-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
@@ -322,8 +371,22 @@
                 <button id="wv-save-btn" class="wv-sync-btn hidden" onclick="saveMatrixSync()" style="background:var(--theme-color); color:white;">💾 儲存</button>
             </div>
         </div>
-        <div class="wv-grid-container">
-            <table class="wv-table" id="wv-table"></table>
+        <div class="wv-content-wrapper">
+            <div class="wv-grid-container">
+                <table class="wv-table" id="wv-table"></table>
+            </div>
+            <div id="request-dashboard" style="display:none;">
+                <div class="rd-close-wrapper" onclick="closeDashboardMobile(event)">
+                    <div class="rd-close-handle"></div>
+                </div>
+                <div class="rd-header">
+                    <span id="rd-header-text">📅 Requests</span>
+                    <div id="close-dashboard-btn" onclick="closeDashboardMobile(event)">✕</div>
+                </div>
+                <div class="rd-content" id="rd-content">
+                    <div class="rd-empty">👆 Tap a date to view requests</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -452,7 +515,11 @@
             'Hanya bisa melihat kemarin dan 7 hari ke depan!\n(只能查看昨天到未來7天)': 'Can only view yesterday and 7 days ahead!',
             '無法換房：目標房間必須是「空房」！': 'Cannot move: Target room must be VACANT!',
             '已發送通知！': 'Notification sent!',
-            '今日目前沒有特殊需求的房間喔！': 'No rooms with special requests today!'
+            '今日目前沒有特殊需求的房間喔！': 'No rooms with special requests today!',
+            'Requests': 'Requests',
+            '👆 Tap a date to view requests': '👆 Ketuk tanggal untuk melihat permintaan',
+            'Tidak ada permintaan khusus': 'No special requests',
+            'Jangan Ganggu': 'Do Not Disturb'
         };
 
         function getText(text) {
@@ -572,6 +639,12 @@
                     
                 } catch(e){console.error(e);}
             } else { ensureData(currDate); }
+            
+            setTimeout(() => {
+                if (sessionStorage.getItem('isWeekViewOpen') === 'true') {
+                    openWeekView();
+                }
+            }, 500); // 確保 db 已連線且初始資料抓取中
         };
 
         function toggleDaySync() {
@@ -748,7 +821,6 @@
             }
             updateDateUI();
             render();
-            openWeekView();
 
             if (user.r === 'admin') {
                 if (typeof db !== 'undefined' && db) {
@@ -979,6 +1051,7 @@
         }
 
         function openWeekView() { 
+            sessionStorage.setItem('isWeekViewOpen', 'true');
             if(user.r === 'staff') {
                 let dt = new Date(getTwDate() + "T12:00:00");
                 dt.setDate(dt.getDate() - 1);
@@ -1067,6 +1140,18 @@
                 snaps.forEach((s, i) => { cache[dates[i]] = s.val() || {}; });
             } 
             renderWeekTable(dates);
+            
+            if (user.r === 'staff') {
+                document.getElementById('request-dashboard').style.display = 'flex';
+                const todayIdx = dates.indexOf(getTwDate());
+                if (todayIdx !== -1) {
+                    setTimeout(() => selectDateInDashboard(getTwDate(), todayIdx + 1, false), 50);
+                } else {
+                    setTimeout(() => selectDateInDashboard(dates[0], 1, false), 50);
+                }
+            } else {
+                document.getElementById('request-dashboard').style.display = 'none';
+            }
         }
 
         function renderWeekTable(dates) {
@@ -1106,8 +1191,24 @@
                 
                 let thClass = isHoliday ? 'th-weekend' : '';
    
+                let hasRequest = false;
+                if (cache[d]) {
+                    for (const rid in cache[d]) {
+                        const room = cache[d][rid];
+                        const n = room.n || {};
+                        if (room.s === 'purple' || n.bed > 0 || n.q > 0 || n.p > 1 || n.late || n.flash || n.bath || (n.msg && n.msg.trim() !== '')) {
+                            hasRequest = true;
+                            break;
+                        }
+                    }
+                }
+                
+                let reqDot = (user.r === 'staff' && hasRequest) ? `<span class="req-dot"></span>` : '';
+                
                 if(d === today) thClass += ' today-col'; 
-                html += `<th class="${thClass}" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''}${user.r!=='staff'?'cursor:pointer;':''}" onclick="if(user.r !== 'staff') lockAllEmptyRooms('${d}')" title="一鍵全鎖房">${lbl}</th>`;
+                let clickAction = user.r === 'staff' ? `selectDateInDashboard('${d}', this.cellIndex)` : `lockAllEmptyRooms('${d}')`;
+                
+                html += `<th class="${thClass} wv-date-col" style="${d===today?'background:#FFF8E1; border-bottom:3px solid #FFC107;':''} cursor:pointer;" onclick="${clickAction}" title="${user.r === 'staff' ? '查看需求' : '一鍵全鎖房'}">${lbl}${reqDot}</th>`;
             });
             html += '</tr></thead><tbody>';
 
@@ -1229,8 +1330,74 @@
             openModal(rid); 
         }
 
-        function forceCloseWeekView() { document.getElementById('week-view-layer').style.display='none'; matrixSyncMode=false; render(); }
+        function forceCloseWeekView() { 
+            sessionStorage.removeItem('isWeekViewOpen');
+            document.getElementById('week-view-layer').style.display='none'; 
+            matrixSyncMode=false; 
+            closeDashboardMobile(); 
+            render(); 
+        }
         function closeWeekView() { forceCloseWeekView(); }
+        
+        function closeDashboardMobile(e) { 
+            if (e) e.stopPropagation();
+            document.getElementById('request-dashboard').classList.remove('mobile-open'); 
+            const cells = document.querySelectorAll('.wv-table td, .wv-table th');
+            cells.forEach(c => c.classList.remove('col-selected'));
+        }
+        
+        function selectDateInDashboard(dateStr, colIndex, isUserClick = true) {
+            if (isUserClick) document.getElementById('request-dashboard').classList.add('mobile-open');
+            
+            const cells = document.querySelectorAll('.wv-table td, .wv-table th');
+            cells.forEach(c => c.classList.remove('col-selected'));
+            
+            const colCells = document.querySelectorAll(`.wv-table tr > :nth-child(${colIndex + 1})`);
+            colCells.forEach(c => c.classList.add('col-selected'));
+
+            const headerText = document.getElementById('rd-header-text');
+            const content = document.getElementById('rd-content');
+            
+            const dayIdx = new Date(dateStr + "T12:00:00").getDay();
+            const dateNum = dateStr.split('-')[2];
+            let lbl = user.r === 'staff' && user.l === 'en' ? `${EN_DAYS[dayIdx]} ${dateNum}` : `${INDO_DAYS[dayIdx]} ${dateNum}`;
+            headerText.innerHTML = `📅 ${lbl} ${getText('Requests')}`;
+
+            let html = '';
+            if (cache[dateStr]) {
+                for (const rid of ROOMS.map(r=>r.id)) {
+                    const room = cache[dateStr][rid];
+                    if (!room) continue;
+                    const n = room.n || {};
+                    let reqs = [];
+                    
+                    if (room.s === 'purple') reqs.push(`🚫 <b>${getText('Jangan Ganggu')}</b>`);
+                    if (n.p > 1) reqs.push(`👩 ${getText('Siapkan')} <b>${n.p} ${pluralize(n.p, 'Kasur')}</b>`);
+                    if (n.bed > 0) reqs.push(`🛏️ +${n.bed} ${pluralize(n.bed, 'Extra Bed')}`);
+                    if (n.q > 0) reqs.push(`<span class="icon">layers</span> +${n.q} ${pluralize(n.q, 'Selimut')}`);
+                    if (n.bath) reqs.push(`🛁 ${getText('Bak Bayi')}`);
+                    if (n.late) reqs.push(`🌃 <b>${getText('Nanti')}</b>`);
+                    if (n.flash) reqs.push(`⚡ <b>${getText('TAMU DADAKAN')}</b>`);
+                    if (n.msg && n.msg.trim() !== '') reqs.push(`<div style="color:#666; font-size:0.95em; margin-top:4px;">💬 ${n.msg}</div>`);
+                    
+                    if (reqs.length > 0) {
+                        html += `<div class="rd-item">
+                                    <div class="rd-room-title">${rid} - ${ROOMS.find(r=>r.id===rid).t}</div>
+                                    <div class="rd-detail">${reqs.join('<br>')}</div>
+                                 </div>`;
+                    }
+                }
+            }
+            
+            if (html === '') {
+                content.innerHTML = `<div class="rd-empty">
+                                        <div class="rd-empty-icon">✅</div>
+                                        <div>${getText('Tidak ada permintaan khusus')}</div>
+                                     </div>`;
+            } else {
+                content.innerHTML = html;
+            }
+        }
 
         function toggleMatrixSync() {
             matrixSyncMode = !matrixSyncMode;
