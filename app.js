@@ -860,28 +860,7 @@ function renderWeekTable(dates) {
     html += '</tr></thead><tbody>';
 
     const target = isTraining ? trainingCache : cache;
-    let list = [...ROOMS];
-    if (user.r === 'staff') {
-        const sortDate = dates.includes(today) ? today : dates[0];
-        list.sort((a,b) => {
-            const da = globalDirty[a.id] ? 0 : 1; 
-            const db = globalDirty[b.id] ? 0 : 1;
-            if(da !== db) return da - db; 
-
-            const sa = safeGetRoom(sortDate, a.id).s; const sb = safeGetRoom(sortDate, b.id).s;
-            const na = safeGetRoom(sortDate, a.id).n; const nb = safeGetRoom(sortDate, b.id).n;
-            const score = (s, n) => {
-                if(n.late) return 4;
-                if(s==='red') return 0;
-                if(s==='yellow') return 1;
-                if(s==='green') return 2;
-                return 3;
-            };
-            return score(sa, na) - score(sb, nb);
-        });
-    }
-
-    list.forEach(r => {
+    ROOMS.forEach(r => {
         html += `<tr><td class="wv-room-col" style="${user.r!=='staff'?'cursor:pointer;':''}" onclick="if(user.r !== 'staff') lockAllEmptyRoomDays('${r.id}')" title="依房號一鍵鎖房">${r.id}</td>`;
         dates.forEach(d => {
             const cd = safeGetRoom(d, r.id);
