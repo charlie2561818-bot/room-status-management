@@ -633,9 +633,11 @@ function render() {
             const sa = safeGetRoom(currDate, a.id).s; const sb = safeGetRoom(currDate, b.id).s;
             const na = safeGetRoom(currDate, a.id).n; const nb = safeGetRoom(currDate, b.id).n;
             const score = (s, n) => {
-                if(s==='red' && !n.late) return 0;
-                if(s==='red' && n.late) return 1;
-                if(s==='yellow') return 2; if(s==='green') return 3; return 4;
+                if(n.late) return 4;
+                if(s==='red') return 0;
+                if(s==='yellow') return 1;
+                if(s==='green') return 2;
+                return 3;
             };
             return score(sa, na) - score(sb, nb);
         });
@@ -869,9 +871,11 @@ function renderWeekTable(dates) {
             const sa = safeGetRoom(sortDate, a.id).s; const sb = safeGetRoom(sortDate, b.id).s;
             const na = safeGetRoom(sortDate, a.id).n; const nb = safeGetRoom(sortDate, b.id).n;
             const score = (s, n) => {
-                if(s==='red' && !n.late) return 0;
-                if(s==='red' && n.late) return 1;
-                if(s==='yellow') return 2; if(s==='green') return 3; return 4;
+                if(n.late) return 4;
+                if(s==='red') return 0;
+                if(s==='yellow') return 1;
+                if(s==='green') return 2;
+                return 3;
             };
             return score(sa, na) - score(sb, nb);
         });
