@@ -136,8 +136,7 @@ function toggleAyaLang() {
 }
 
 function getTodayStr() {
-    const d = new Date(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0');
-    return d.getFullYear() + '-' + mm + '-' + dd;
+    return getTwDate();
 }
 
 function showAyaReminderIfNeeded() {
@@ -230,7 +229,13 @@ window.onload = function() {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
             loadData(currDate);
-            db.ref('settings/aya_pin').on('value', s => { if(s.val()){ayaPin=s.val(); localStorage.setItem('aya_pin', ayaPin);}});
+            db.ref('settings/aya_pin').on('value', s => { 
+                if(s.val()){
+                    ayaPin=s.val(); 
+                    localStorage.setItem('aya_pin', ayaPin);
+                    if(document.getElementById('pin-display')) document.getElementById('pin-display').innerText = ayaPin;
+                }
+            });
             
 
             db.ref('global/dirty_flags').on('value', s => {
@@ -466,6 +471,33 @@ function autoCleanOldData() {
 }
 
 let lastKnownUpdate = null;
+
+function triggerGlobalUpdate() {
+    const now = Date.now();
+    lastKnownUpdate = now;
+    if (!isTraining && typeof db !== 'undefined' && db) {
+        db.ref('global/last_update').set(now);
+    }
+}
+
+function onVisibilityChange() {
+    if (document.visibilityState === 'visible' && typeof user !== 'undefined' && user && user.r === 'staff' && !isTraining && typeof db !== 'undefined' && db) {
+        db.ref('global/last_update').once('value', snap => {
+            const val = snap.val();
+            if (val && lastKnownUpdate && val !== lastKnownUpdate) {
+                lastKnownUpdate = val;
+                db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
+            } else {
+                lastKnownUpdate = val;
+            }
+        });
+        if (typeof loadData === 'function') loadData(currDate);
+        if (document.getElementById('week-view-layer') && document.getElementById('week-view-layer').style.display === 'flex') {
+            if (typeof refreshWeekView === 'function') refreshWeekView();
+        }
+    }
+}
+
 function setupAyaListener() {
     if(isTraining) return; 
     if(globalUpdateListener) globalUpdateListener.off();
@@ -480,23 +512,8 @@ function setupAyaListener() {
         }
     });
     
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible' && user.r === 'staff' && !isTraining && db) {
-            db.ref('global/last_update').once('value', snap => {
-                const val = snap.val();
-                if (val && lastKnownUpdate && val !== lastKnownUpdate) {
-                    lastKnownUpdate = val;
-                    db.ref('status/'+getTwDate()).once('value', s => { queueAlert('UPDATE', {}); });
-                } else {
-                    lastKnownUpdate = val;
-                }
-            });
-            loadData(currDate);
-            if (document.getElementById('week-view-layer').style.display === 'flex') {
-                refreshWeekView();
-            }
-        }
-    });
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 }
 
 function queueAlert(rid, val) {
@@ -556,6 +573,7 @@ function changeAyaPin() {
     const newPin = prompt("新 PIN 碼 (4位數)", ayaPin);
     if(newPin && newPin.length===4) {
         ayaPin = newPin; localStorage.setItem('aya_pin', ayaPin);
+        if(document.getElementById('pin-display')) document.getElementById('pin-display').innerText = ayaPin;
         if(db) db.ref('settings/aya_pin').set(ayaPin);
     }
 }
@@ -1086,7 +1104,7 @@ function matrixCycle(d, rid) {
     if (!isTraining && db) { 
          if (next === 'red') db.ref('global/dirty_flags/'+rid).set(true);
          if (user.r === 'admin' && d === getTwDate()) { 
-             db.ref('global/last_update').set(Date.now());
+             triggerGlobalUpdate();
          } 
          db.ref('status/'+d+'/'+rid).update(target[d][rid]);
          logAction(`變更 ${rid} 狀態為 ${ST[next].cn}`, d);
@@ -1140,7 +1158,7 @@ function lockAllEmptyRooms(d) {
     
     if (updated && !isTraining && db) {
         if (user.r === 'admin' && d === getTwDate()) { 
-             db.ref('global/last_update').set(Date.now());
+             triggerGlobalUpdate();
         }
         logAction(isLocking ? `一鍵鎖房 (所有空房)` : `一鍵解鎖 (所有鎖房)`, d);
     }
@@ -1208,7 +1226,7 @@ function lockAllEmptyRoomDays(rid) {
     
     if (updated && !isTraining && db) {
          if (user.r === 'admin' && dates.includes(getTwDate())) {
-             db.ref('global/last_update').set(Date.now());
+             triggerGlobalUpdate();
          }
     }
     if (dates.includes(currDate)) {
@@ -1264,7 +1282,7 @@ function updateCellUI(d, rid) {
 function saveMatrixSync() {
     if(!isTraining && db) { 
          for(let date in cache) db.ref('status/'+date).update(cache[date]);
-         if (user.r === 'admin' && cache[getTwDate()]) db.ref('global/last_update').set(Date.now());
+         if (user.r === 'admin' && cache[getTwDate()]) triggerGlobalUpdate();
     }
     toggleMatrixSync();
 }
@@ -1410,15 +1428,16 @@ function setStatus(s) {
         if (target[currDate] && target[currDate][mRoomId]) {
             target[currDate][mRoomId].n = {};
         }
-        if (!isTraining && typeof db !== 'undefined' && db) {
-            db.ref('status/' + currDate + '/' + mRoomId + '/n').set(null);
-        }
+        // Instead of setting null directly here and causing a race condition,
+        // we'll pass it down to updateRoom via updateObj to ensure atomicity.
     }
 
     let updateObj = {s: s, n: {isLocked: null}};
     if (s === 'locked') {
         updateObj.s = 'yellow';
         updateObj.n.isLocked = true;
+    } else if (s === 'blue') {
+        updateObj.n = null; // Tell updateRoom to clear notes completely
     }
     updateRoom(mRoomId, updateObj);
     closeModal(); 
@@ -1481,7 +1500,9 @@ function updateRoom(rid, diff) {
     const d = target[currDate][rid];
     
     if(diff.s) d.s = diff.s; 
-    if(diff.n) {
+    if(diff.n === null) {
+        d.n = {};
+    } else if(diff.n) {
         d.n = { ...d.n, ...diff.n };
     }
     if(diff.s === 'red' && d.n && d.n.late && diff.n) diff.n.late = true;
@@ -1489,7 +1510,7 @@ function updateRoom(rid, diff) {
     if(!isTraining && db) {
         db.ref('status/'+currDate+'/'+rid).update(diff);
         if (user.r === 'admin' && currDate === getTwDate()) {
-            db.ref('global/last_update').set(Date.now());
+            triggerGlobalUpdate();
         }
         
         if (diff.s === 'red') {
@@ -1527,8 +1548,8 @@ function finishCleaning(rid, status) {
         // 若為「退房(Red)」或「空房(Blue)」：
         // 自動根據有無備註需求，轉換為預訂(Yellow)或空房(Blue)。
         const n = d.n || {};
-        // 檢查是否有任何備註需求
-        const hasBooking = (n.p || n.bed || n.q || n.late || n.flash || n.msg || n.bath || n.out);
+        // 檢查是否有任何備註需求 (排除 out，讓退房後單純外出的房間變回空房)
+        const hasBooking = (n.p || n.bed || n.q || n.late || n.flash || n.msg || n.bath);
         setStatus(hasBooking ? 'yellow' : 'blue');
     }
 }
