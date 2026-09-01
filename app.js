@@ -1534,11 +1534,15 @@ function finishCleaning(rid, status) {
     if(status) {
         setStatus(status);
     } else {
+        // 讀取真實的原始資料，不經過 safeGetRoom 的偽裝，避免鎖房被誤改為空房
+        const target = isTraining ? trainingCache : cache;
+        const raw = target[currDate] && target[currDate][rid];
+        const isLocked = raw && raw.s === 'yellow' && raw.n && raw.n.isLocked;
+
         const d = safeGetRoom(currDate, rid);
         
-        // Optimized Logic:
-        // 如果房間當前狀態是「續住(Green)」或「預訂(Yellow)」，只消除髒房狀態（紅框），保持原狀態。
-        if (d.s === 'green' || d.s === 'yellow') {
+        // 如果房間是「鎖房」、「續住(Green)」或「預訂(Yellow)」，只消除髒房狀態（紅框），保持原狀態。
+        if (d.s === 'green' || d.s === 'yellow' || isLocked) {
              closeModal();
              logAction(`完成清潔 ${rid}`);
              render();
