@@ -861,6 +861,8 @@ function renderWeekTable(dates) {
             for (const rid in cache[d]) {
                 const room = cache[d][rid];
                 const n = room.n || {};
+                // 跳過鎖房狀態的房間，鎖房備註為個人註記
+                if (room.s === 'yellow' && n.isLocked) continue;
                 if (room.s === 'purple' || n.bed > 0 || n.q > 0 || n.p > 1 || n.late || n.flash || n.bath || (n.msg && n.msg.trim() !== '')) {
                     hasRequest = true;
                     break;
