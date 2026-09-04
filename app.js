@@ -1681,6 +1681,8 @@ async function broadcastSpecialRequests() {
         if (!dayData[rid]) return;
         const n = dayData[rid].n;
         if (!n) return;
+        // 跳過鎖房狀態的房間，鎖房備註為個人註記，不納入特殊需求清單
+        if (dayData[rid].s === 'yellow' && n.isLocked) return;
 
         let roomReqs = [];
         
@@ -1722,6 +1724,8 @@ async function broadcastSpecialRequestsForDay(targetDate) {
         if (!dayData[rid]) return;
         const n = dayData[rid].n;
         if (!n) return;
+        // 跳過鎖房狀態的房間，鎖房備註為個人註記，不納入特殊需求清單
+        if (dayData[rid].s === 'yellow' && n.isLocked) return;
 
         let roomReqs = [];
         
