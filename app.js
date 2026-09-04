@@ -1034,6 +1034,8 @@ function selectDateInDashboard(dateStr, colIndex, isUserClick = true) {
             const room = cache[dateStr][rid];
             if (!room) continue;
             const n = room.n || {};
+            // 跳過鎖房狀態的房間，鎖房備註為個人註記，不對外顯示
+            if (room.s === 'yellow' && n.isLocked) continue;
             let reqs = [];
             
             if (room.s === 'purple') reqs.push(`🚫 <b>${getText('Jangan Ganggu')}</b>`);
