@@ -899,7 +899,7 @@ function renderWeekTable(dates) {
             if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
 
             if(cd.n.bath) icons += `🛁 `;
-            if(cd.n.msg) icons += `💬 `;
+            if(cd.n.msg || cd.n.lockMsg) icons += `💬 `;
             let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
             let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
             let isDirty = (globalDirty[r.id] && !isTraining);
@@ -1257,7 +1257,7 @@ function updateCellUI(d, rid) {
     if(cd.n.bed) icons += `<span class="icon-hl">+${cd.n.bed}</span> `;
     if(cd.n.q) icons += `<span class="icon-hl"><span class="icon" style="font-size:10px">layers</span>+${cd.n.q}</span> `;
     if(cd.n.bath) icons += `🛁 `;
-    if(cd.n.msg) icons += `💬 `;
+    if(cd.n.msg || cd.n.lockMsg) icons += `💬 `;
     let moon = cd.n.late ? '<span class="cell-moon">🌃</span>' : '';
     let flash = cd.n.flash ? '<span class="cell-flash">⚡</span>' : '';
     let isDirty = (globalDirty[rid] && !isTraining);
@@ -1407,7 +1407,7 @@ function openModal(rid) {
     ctrls += `<div class="ctrl-row"><div>🏃 外出</div><div class="tgl ${n.out?'on':''}" onclick="togOut(this)"></div><input type="hidden" id="v-out" value="${n.out?'1':''}"></div>`;
 
     ctrls += `<div class="ctrl-row"><div>🛁 澡盆</div><div class="tgl ${n.bath?'on':''}" onclick="tog(this)"></div><input type="hidden" id="v-bath" value="${n.bath?'1':''}"></div><div class="ctrl-row"><div>🌃 晚到 (墊底)</div><div class="tgl ${n.late?'on-red':''}" onclick="togRed(this)"></div><input type="hidden" id="v-late" value="${n.late?'1':''}"></div><div class="ctrl-row"><div>⚡ 現場客 (標記)</div><div class="tgl ${n.flash?'on-orange':''}" onclick="togFlash(this)"></div><input type="hidden" id="v-flash" value="${n.flash?'1':''}"></div><textarea id="v-msg" style="width:100%; padding:10px; margin-top:10px; border:1px solid #ccc; border-radius:8px;"
-    placeholder="備註...">${n.msg||''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button>`;
+    placeholder="備註...">${n.lockMsg || n.msg || ''}</textarea><button class="line-btn" style="background:var(--theme-color)" onclick="saveNote(true)">💾 儲存備註</button>`;
     body.innerHTML += `<div style="border-top:1px solid #eee;">${ctrls}</div>`;
 
     if (user.r !== 'staff') {
@@ -1450,6 +1450,8 @@ function setStatus(s) {
 
 function saveNote(close = false) {
     const d = safeGetRoom(currDate, mRoomId);
+    const isLocked = (d && d.n && d.n.isLocked !== undefined) ? d.n.isLocked : null;
+    const msgText = document.getElementById('v-msg').value;
     const n = {
         p: parseInt(document.getElementById('val-p')?.innerText||0),
         bed: parseInt(document.getElementById('val-bed')?.innerText||0),
@@ -1458,9 +1460,17 @@ function saveNote(close = false) {
         late: document.getElementById('v-late').value==='1',
         flash: document.getElementById('v-flash').value==='1',
         out: document.getElementById('v-out').value==='1',
-        msg: document.getElementById('v-msg').value,
-        isLocked: (d && d.n && d.n.isLocked !== undefined) ? d.n.isLocked : null
+        isLocked: isLocked
     };
+    
+    if (d && d.s === 'yellow' && isLocked) {
+        n.lockMsg = msgText;
+        n.msg = '';
+    } else {
+        n.msg = msgText;
+        n.lockMsg = '';
+    }
+    
     updateRoom(mRoomId, {n:n}); 
     if(close) closeModal(); 
     logAction(`更新 ${mRoomId} 備註`);
