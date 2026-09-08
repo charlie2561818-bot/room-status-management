@@ -1463,7 +1463,7 @@ function saveNote(close = false) {
         isLocked: isLocked
     };
     
-    if (d && d.s === 'yellow' && isLocked) {
+    if (isLocked) {
         n.lockMsg = msgText;
         n.msg = '';
     } else {
