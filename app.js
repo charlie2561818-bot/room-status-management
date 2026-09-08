@@ -326,6 +326,7 @@ function safeGetRoom(date, rid) {
     if (user && (user.r === 'staff' || user.n === '👵🏻 媽媽') && (s_val === 'locked' || raw.s === 'locked')) {
         let n_copy = { ...raw.n };
         delete n_copy.msg;
+        delete n_copy.lockMsg;
         return { s: 'blue', n: n_copy }; 
     }
     
