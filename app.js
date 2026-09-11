@@ -1323,6 +1323,19 @@ function executeMove(toRid) {
     
     updateRoom(fromRid, {s:'blue'});
 
+    // 同步搬移 orders 節點的訂單標籤（供後端取消訂單時正確辨認房間）
+    if (!isTraining && typeof db !== 'undefined' && db) {
+        db.ref('orders/' + currDate + '/' + fromRid).once('value').then(function(snap) {
+            var orderTag = snap.val();
+            if (orderTag) {
+                var updates = {};
+                updates['orders/' + currDate + '/' + toRid] = orderTag;
+                updates['orders/' + currDate + '/' + fromRid] = null;
+                db.ref().update(updates);
+            }
+        });
+    }
+
     if(document.getElementById('week-view-layer').style.display === 'flex') {
         updateCellUI(currDate, fromRid);
         updateCellUI(currDate, toRid);
