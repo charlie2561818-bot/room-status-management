@@ -753,22 +753,31 @@ function pickWeekDate(v) {
 let twHolidaysCache = {};
 async function fetchHolidays(year) {
     if (twHolidaysCache[year]) return;
-    try {
-        const res = await fetch(`https://cdn.jsdelivr.net/gh/imsyuan/taiwan-holidays/data/${year}.json`);
-        if (!res.ok) throw new Error('API return ' + res.status);
-        const data = await res.json();
-        twHolidaysCache[year] = {};
-        data.forEach(d => {
-            const y = d.date.substring(0,4);
-            const m = d.date.substring(4,6);
-            const day = d.date.substring(6,8);
-            const dateStr = `${y}-${m}-${day}`;
-            twHolidaysCache[year][dateStr] = d.isHoliday;
-        });
-    } catch (e) {
-        console.error('Failed to load holidays for', year, e);
-        twHolidaysCache[year] = {}; // prevent infinite retry
+    // 主要來源失敗時(例如該年度尚未發布)，改用備援來源；兩者 JSON 格式相同
+    const sources = [
+        `https://cdn.jsdelivr.net/gh/imsyuan/taiwan-holidays/data/${year}.json`,
+        `https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${year}.json`
+    ];
+    for (const url of sources) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('API return ' + res.status);
+            const data = await res.json();
+            const map = {};
+            data.forEach(d => {
+                const y = d.date.substring(0,4);
+                const m = d.date.substring(4,6);
+                const day = d.date.substring(6,8);
+                const dateStr = `${y}-${m}-${day}`;
+                map[dateStr] = d.isHoliday;
+            });
+            twHolidaysCache[year] = map;
+            return;
+        } catch (e) {
+            console.error('Failed to load holidays for', year, 'from', url, e);
+        }
     }
+    twHolidaysCache[year] = {}; // prevent infinite retry
 }
 
 async function refreshWeekView() {
